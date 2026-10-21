@@ -1,0 +1,5 @@
+herramientas/node_modules/
+herramientas/package-lock.json
+herramientas/tmp_tarjetas/
+herramientas/tmp_test/
+__pycache__/

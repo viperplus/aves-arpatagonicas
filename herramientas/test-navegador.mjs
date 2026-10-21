@@ -1,0 +1,244 @@
+/* Prueba de humo en navegador:
+   1. levanta un servidor local del proyecto
+   2. carga index, tarjetas y ar.html (modo demo)
+   3. abre ar.html con cámara falsa (archivo Y4M = foto de una tarjeta)
+      y comprueba que MindAR detecta la tarjeta y se muestra la ficha
+   Uso:  node test-navegador.mjs                                   */
+
+import http from "http";
+import fs from "fs";
+import path from "path";
+import os from "os";
+import { fileURLToPath } from "url";
+import puppeteer from "puppeteer-core";
+import { createCanvas, loadImage } from "canvas";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const raiz = path.resolve(__dirname, "..");
+const tmp = path.join(__dirname, "tmp_test");
+fs.mkdirSync(tmp, { recursive: true });
+
+const MIME = {
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".css": "text/css; charset=utf-8",
+  ".png": "image/png",
+  ".svg": "image/svg+xml",
+  ".mind": "application/octet-stream",
+  ".json": "application/json",
+  ".md": "text/plain; charset=utf-8"
+};
+
+let fallos = 0;
+function check(cond, msg) {
+  console.log((cond ? "  PASS  " : "  FAIL  ") + msg);
+  if (!cond) fallos++;
+}
+
+/* ---------------- servidor local ---------------- */
+const servidor = http.createServer((req, res) => {
+  const rel = decodeURIComponent(req.url.split("?")[0]) || "/index.html";
+  const archivo = path.normalize(path.join(raiz, rel === "/" ? "/index.html" : rel));
+  if (!archivo.startsWith(raiz)) { res.writeHead(403); return res.end(); }
+  fs.readFile(archivo, (err, data) => {
+    if (err) { res.writeHead(404); return res.end("no encontrado"); }
+    res.writeHead(200, {
+      "Content-Type": MIME[path.extname(archivo).toLowerCase()] || "application/octet-stream"
+    });
+    res.end(data);
+  });
+});
+
+/* ---------------- cámara falsa (Y4M) ---------------- */
+async function generarCamaraFalsa() {
+  const W = 640, H = 480;
+  /* ojo: `canvas` no abre rutas con "°" en Windows -> pasamos el buffer */
+  const tarjeta = await loadImage(fs.readFileSync(path.join(raiz, "tarjetas", "chimango.png")));
+  const cv = createCanvas(W, H);
+  const ctx = cv.getContext("2d");
+  ctx.fillStyle = "#4a4a4a";
+  ctx.fillRect(0, 0, W, H);
+  const h = H * 0.84;
+  const w = h * tarjeta.width / tarjeta.height;
+  ctx.drawImage(tarjeta, (W - w) / 2, (H - h) / 2, w, h);
+  const d = ctx.getImageData(0, 0, W, H).data;
+
+  const yBuf = Buffer.alloc(W * H);
+  const uAcc = new Float64Array((W / 2) * (H / 2));
+  const vAcc = new Float64Array((W / 2) * (H / 2));
+  const cnt = new Uint16Array((W / 2) * (H / 2));
+  const cl = v => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      const r = d[i], g = d[i + 1], b = d[i + 2];
+      yBuf[y * W + x] = cl(0.299 * r + 0.587 * g + 0.114 * b);
+      const ci = (y >> 1) * (W >> 1) + (x >> 1);
+      uAcc[ci] += -0.168736 * r - 0.331264 * g + 0.5 * b + 128;
+      vAcc[ci] += 0.5 * r - 0.418688 * g - 0.081312 * b + 128;
+      cnt[ci]++;
+    }
+  }
+  const uBuf = Buffer.alloc(W * H / 4);
+  const vBuf = Buffer.alloc(W * H / 4);
+  for (let i = 0; i < uBuf.length; i++) {
+    uBuf[i] = cl(uAcc[i] / cnt[i]);
+    vBuf[i] = cl(vAcc[i] / cnt[i]);
+  }
+
+  const partes = [Buffer.from(`YUV4MPEG2 W${W} H${H} F15:1 Ip A1:1 C420jpeg\n`)];
+  const marco = Buffer.from("FRAME\n");
+  for (let f = 0; f < 30; f++) partes.push(marco, yBuf, uBuf, vBuf);
+  const destino = path.join(os.tmpdir(), "aves_camara.y4m");
+  fs.writeFileSync(destino, Buffer.concat(partes));
+  return destino;
+}
+
+function buscarEdge() {
+  const c = [
+    "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
+  ];
+  return c.find(p => fs.existsSync(p));
+}
+
+/* ---------------- helpers ---------------- */
+function capturar(page) {
+  const errs = [];
+  page.on("pageerror", e => errs.push("pageerror: " + e.message));
+  page.on("console", m => { if (m.type() === "error") errs.push("console: " + m.text()); });
+  return errs;
+}
+
+/* ---------------- prueba ---------------- */
+async function main() {
+  const puerto = 8799;
+  await new Promise(r => servidor.listen(puerto, "127.0.0.1", r));
+  const base = `http://localhost:${puerto}`;
+  const edge = buscarEdge();
+  if (!edge) throw new Error("No se encontro Edge instalado");
+
+  const y4m = await generarCamaraFalsa();
+  console.log("Y4M:", y4m, (fs.statSync(y4m).size / 1048576).toFixed(1) + " MB");
+
+  const browser = await puppeteer.launch({
+    executablePath: edge,
+    headless: true,
+    args: [
+      "--use-fake-ui-for-media-stream",
+      "--use-fake-device-for-media-stream",
+      `--use-file-for-fake-video-capture=${y4m}`,
+      "--autoplay-policy=no-user-gesture-required",
+      "--enable-unsafe-swiftshader",
+      "--use-gl=angle",
+      "--use-angle=swiftshader",
+      "--ignore-gpu-blocklist",
+      "--window-size=1100,800"
+    ]
+  });
+  await browser.defaultBrowserContext().overridePermissions(base, ["camera"]);
+
+  /* ---- 1. portada ---- */
+  console.log("\n[1] index.html");
+  let page = await browser.newPage();
+  await page.setViewport({ width: 1200, height: 900 });
+  let errs = capturar(page);
+  await page.goto(base + "/index.html", { waitUntil: "networkidle0", timeout: 40000 });
+  const fichas = await page.$$eval(".ficha-card", e => e.length);
+  check(fichas === 9, `se renderizan las 9 fichas (${fichas})`);
+  check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
+  await page.screenshot({ path: path.join(tmp, "01-index.png"), fullPage: true });
+
+  /* ---- 2. hoja de impresion ---- */
+  console.log("\n[2] tarjetas.html");
+  errs = capturar(page);
+  await page.goto(base + "/tarjetas.html", { waitUntil: "networkidle0", timeout: 40000 });
+  await page.waitForFunction(() => {
+    const im = document.querySelectorAll(".tarjeta-impresion img");
+    return im.length === 9 && [...im].every(i => i.complete && i.naturalWidth > 0);
+  }, { timeout: 20000 }).catch(() => {});
+  const imgs = await page.$$eval(".tarjeta-impresion img",
+    els => els.filter(e => e.complete && e.naturalWidth > 0).length);
+  check(imgs === 9, `las 9 tarjetas PNG cargan (${imgs})`);
+  check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
+  await page.close();
+
+  /* ---- 3. visor AR en modo demo ---- */
+  console.log("\n[3] ar.html · modo demo (sin camara)");
+  page = await browser.newPage();
+  await page.setViewport({ width: 420, height: 820, deviceScaleFactor: 2 });
+  errs = capturar(page);
+  await page.goto(base + "/ar.html", { waitUntil: "load", timeout: 40000 });
+  await page.waitForFunction(
+    () => { const s = document.getElementById("escena"); return s && s.hasLoaded; },
+    { timeout: 30000 }
+  ).catch(() => {});
+  const webgl = await page.evaluate(() =>
+    !!document.createElement("canvas").getContext("webgl2"));
+  check(webgl, "WebGL2 disponible en headless");
+
+  await page.click("#btn-demo");
+  await page.waitForFunction(
+    () => !document.getElementById("demo").classList.contains("oculto"),
+    { timeout: 10000 }).catch(() => {});
+  let n = await page.$eval("[rotar-demo]", el => el.children.length);
+  check(n > 0, `la ave 3D se crea en el modo demo (hijos=${n})`);
+  let nombre = await page.$eval("#ficha-nombre", e => e.textContent.trim());
+  check(nombre.length > 0, `se muestra la ficha (${nombre})`);
+  await page.screenshot({ path: path.join(tmp, "02-demo.png") });
+
+  const chips = await page.$$("#demo-chips .chip");
+  check(chips.length === 9, `hay 9 chips para cambiar de especie (${chips.length})`);
+  if (chips[3]) {
+    await chips[3].click();
+    const n2 = await page.$eval("#ficha-nombre", e => e.textContent.trim());
+    check(n2 !== nombre && n2.length > 0, `cambia de especie (${nombre} -> ${n2})`);
+  }
+  await page.click("#demo-cerrar");
+  const introVisible = await page.$eval("#intro", e => !e.classList.contains("oculto"));
+  check(introVisible, "cierra la demo y vuelve a la pantalla inicial");
+  check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
+
+  /* ---- 4. visor AR con camara falsa: deteccion real ---- */
+  console.log("\n[4] ar.html · camara falsa + deteccion de la tarjeta");
+  errs = capturar(page);
+  await page.click("#btn-iniciar");
+
+  const arListo = await page.waitForFunction(
+    () => { const e = document.getElementById("estado");
+            return e && /Apunt/.test(e.textContent) ? true : false; },
+    { timeout: 45000 }).then(() => true).catch(() => false);
+  check(arListo, "MindAR quedo listo (evento arReady)");
+
+  const detectado = await page.waitForFunction(() => {
+    const f = document.getElementById("ficha");
+    if (f && !f.classList.contains("oculto")) {
+      const t = document.getElementById("ficha-nombre").textContent.trim();
+      if (t) return t;
+    }
+    return false;
+  }, { timeout: 60000 }).then(h => h.jsonValue()).catch(() => null);
+
+  check(!!detectado, `tarjeta detectada con la camara falsa (${detectado || "nada"})`);
+  await page.screenshot({ path: path.join(tmp, "03-deteccion.png") });
+
+  const aviso = await page.$eval("#aviso-error", e =>
+    e.classList.contains("oculto") ? "" : e.textContent.trim());
+  if (!detectado && aviso) console.log("  aviso de error:", aviso);
+  check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
+  await page.close();
+
+  await browser.close();
+  servidor.close();
+
+  console.log("\n" + (fallos ? `RESULTADO: ${fallos} comprobacion(es) fallaron` : "RESULTADO: todo OK"));
+  console.log("capturas en:", tmp);
+  process.exit(fallos ? 1 : 0);
+}
+
+main().catch(e => {
+  console.error("ERROR:", e);
+  try { servidor.close(); } catch (_) {}
+  process.exit(2);
+});

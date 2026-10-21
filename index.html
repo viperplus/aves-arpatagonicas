@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aves de la Patagonia · Guía de campo con RA</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%A6%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/aves.css">
+</head>
+<body>
+
+<header class="encabezado">
+  <h1 class="titulo">Aves de la Patagonia Norte</h1>
+  <p class="sub">Guía de campo con realidad aumentada · Río Negro</p>
+  <div class="acciones">
+    <a class="btn btn-grande" href="ar.html">🐦 Abrir cámara y escanear</a>
+    <a class="btn btn-fantasma" href="tarjetas.html">🖨️ Imprimir tarjetas</a>
+  </div>
+</header>
+
+<main class="grilla" id="grilla"></main>
+
+<footer class="pie-pag">
+  Nueve especies de la estepa y las lagunas de Río Negro.<br>
+  Imprimí las tarjetas, apuntá con el celular y mirá cada ave en 3D.
+</footer>
+
+<script src="js/datos.js"></script>
+<script src="js/aves-svg.js"></script>
+<script>
+  (function () {
+    var grilla = document.getElementById("grilla");
+    window.AVES.forEach(function (a) {
+      var arte = window.AvesSVG.aveSVG(a, { width: 400, height: 400, colorFondo: "#efe5cf" });
+      var card = document.createElement("article");
+      card.className = "ficha-card";
+      card.style.borderTopColor = a.color;
+      card.innerHTML =
+        '<div class="arte">' + arte + '</div>' +
+        '<div class="cuerpo">' +
+          '<span class="grupo" style="background:' + a.color + '">' + a.grupo + '</span>' +
+          '<h3>' + a.nombre + '</h3>' +
+          '<div class="cient">' + a.cientifico + '</div>' +
+          '<p class="dato">' + a.dato + '</p>' +
+          '<div class="meta">' +
+            '<div><span>Tamaño</span>' + a.tamano + '</div>' +
+            '<div><span>Alimentación</span>' + a.alimento + '</div>' +
+            '<div><span>Hábitat</span>' + a.habitat + '</div>' +
+          '</div>' +
+        '</div>';
+      grilla.appendChild(card);
+    });
+  })();
+</script>
+</body>
+</html>

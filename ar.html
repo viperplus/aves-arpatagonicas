@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Aves de la Patagonia · Realidad Aumentada</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%A6%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/aves.css">
+<script src="lib/aframe.min.js"></script>
+<script src="lib/mindar-image-aframe.prod.js"></script>
+</head>
+<body class="ar">
+
+<!-- ===== escena AR ===== -->
+<div id="contenedor-ar">
+  <a-scene id="escena"
+    mindar-image="imageTargetSrc: mind/aves.mind; autoStart: false; maxTrack: 1; uiLoading: no; uiScanning: no; uiError: no"
+    embedded
+    color-space="sRGB"
+    renderer="colorManagement: true; physicallyCorrectLights: true; alpha: true"
+    vr-mode-ui="enabled: false"
+    device-orientation-permission-ui="enabled: false">
+
+    <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false">
+      <a-entity light="type: directional; color: #ffffff; intensity: 0.9" position="0.4 1 0.6"></a-entity>
+    </a-camera>
+    <a-entity light="type: ambient; color: #cfe6ff; intensity: 0.65"></a-entity>
+  </a-scene>
+</div>
+
+<!-- ===== pantalla inicial ===== -->
+<div id="intro" class="pantalla">
+  <div class="intro-tarjeta">
+    <div class="intro-ico">🐦</div>
+    <h1>Aves de la Patagonia</h1>
+    <p class="intro-sub">Realidad aumentada sobre tarjetas impresas</p>
+
+    <ol class="pasos">
+      <li><strong>Imprimí</strong> las tarjetas de las aves (<a href="tarjetas.html">hoja para imprimir</a>).</li>
+      <li><strong>Abrí la cámara</strong> con el botón de abajo y <strong>apuntá</strong> el celular a una tarjeta.</li>
+      <li><strong>¡Aparece el ave en 3D!</strong> Podés caminar alrededor para verla desde todos los lados.</li>
+    </ol>
+
+    <div class="botones-intro">
+      <button id="btn-iniciar" class="btn btn-grande">Iniciar cámara</button>
+      <button id="btn-demo" class="btn btn-fantasma">Ver sin cámara (demo)</button>
+    </div>
+
+    <p id="aviso-error" class="nota nota-error oculto"></p>
+
+    <p class="nota">Funciona en iPhone y Android desde el navegador. No hay que instalar nada.<br>
+    Si la cámara no arranca, probá con <strong>Ver sin cámara</strong>.</p>
+
+    <a class="volver" href="index.html">← Volver a la guía</a>
+  </div>
+</div>
+
+<!-- ===== HUD (se ve sobre la cámara) ===== -->
+<div id="hud" class="oculto">
+  <div id="estado" class="estado">Apuntá a una tarjeta…</div>
+  <button id="btn-detener" class="btn-mini" title="Detener cámara">✕</button>
+</div>
+
+<!-- ===== ficha del ave detectada ===== -->
+<div id="ficha" class="ficha-ar oculto">
+  <div class="ficha-cab">
+    <span id="ficha-grupo" class="chip"></span>
+    <button id="ficha-cerrar" class="btn-mini">✕</button>
+  </div>
+  <h2 id="ficha-nombre"></h2>
+  <div id="ficha-cientifico" class="cientifico"></div>
+  <div class="ficha-datos">
+    <div><span>Tamaño</span><b id="ficha-tam"></b></div>
+    <div><span>Alimenta</span><b id="ficha-ali"></b></div>
+    <div><span>Hábitat</span><b id="ficha-hab"></b></div>
+  </div>
+  <p id="ficha-dato" class="ficha-dato"></p>
+</div>
+
+<!-- ===== panel de demo (sin cámara) ===== -->
+<div id="demo" class="demo-panel oculto">
+  <div class="demo-cab">
+    <strong>Modo demo · sin cámara</strong>
+    <div class="acciones-demo">
+      <button id="demo-plegar" class="btn-mini" title="Mostrar/ocultar lista de especies">−</button>
+      <button id="demo-cerrar" class="btn-mini" title="Salir de la demo">✕</button>
+    </div>
+  </div>
+  <div id="demo-chips" class="demo-chips"></div>
+</div>
+
+<script src="js/datos.js"></script>
+<script src="js/aves3d.js"></script>
+<script src="js/ar.js"></script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "aves-ar-herramientas",
+  "private": true,
+  "type": "module",
+  "description": "Scripts para generar tarjetas y compilar los marcadores .mind",
+  "dependencies": {
+    "canvas": "^2.11.2",
+    "mind-ar": "^1.2.5",
+    "puppeteer-core": "^24.43.1"
+  }
+}

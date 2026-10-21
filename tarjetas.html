@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Imprimir tarjetas · Aves de la Patagonia</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%A6%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/aves.css">
+</head>
+<body>
+
+<header class="hoja-cab">
+  <h1>Tarjetas para imprimir</h1>
+  <p>Nueve aves · una por hoja · listas para escanear</p>
+  <div class="acciones" style="margin-top:16px">
+    <button class="btn btn-grande" onclick="window.print()">🖨️ Imprimir</button>
+    <a class="btn btn-fantasma" href="index.html">← Volver a la guía</a>
+    <a class="btn btn-fantasma" href="ar.html">Abrir cámara</a>
+  </div>
+</header>
+
+<section class="impresion-notas">
+  <b>Consejos para que el celular las reconozca bien:</b>
+  <ul>
+    <li>Imprimilas en <b>papel mate</b> (el brillo del papel brillante dificulta el escaneo).</li>
+    <li>Tamaño mínimo: <b>8 cm de ancho</b>. Ideal: una tarjeta por hoja A4 (ya viene configurado).</li>
+    <li>No las dobles ni pegues nada encima del borde y el dibujo: son los que ayuda a reconocerlas.</li>
+    <li>Con buena luz y a unos 30–60 cm de distancia funcionan mejor.</li>
+  </ul>
+</section>
+
+<main class="tarjetas-impresion" id="hoja"></main>
+
+<footer class="pie-pag">
+  Imprimí en color si podés. Si sale en blanco y negro igual se escanean, pero el color ayuda.
+</footer>
+
+<script src="js/datos.js"></script>
+<script>
+  (function () {
+    var hoja = document.getElementById("hoja");
+    window.AVES.forEach(function (a) {
+      var d = document.createElement("figure");
+      d.className = "tarjeta-impresion";
+      var img = document.createElement("img");
+      img.src = "tarjetas/" + a.id + ".png";
+      img.alt = "Tarjeta de " + a.nombre;
+      d.appendChild(img);
+      hoja.appendChild(d);
+    });
+  })();
+</script>
+</body>
+</html>

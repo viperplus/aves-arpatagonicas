@@ -271,7 +271,7 @@
         this.alaIzq = this.el.querySelector(".ala-izq");
         this.cuerpo = this.el.firstChild;
       },
-      tick: function (dt, ts) {
+      tick: function (time, dt) {
         this.t += dt / 1000;
         var t = this.t;
         /* balanceo vertical sutil del cuerpo */

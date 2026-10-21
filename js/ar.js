@@ -52,8 +52,11 @@
     window.AVES.forEach(function (ave, i) {
       var ancla = document.createElement("a-entity");
       ancla.setAttribute("mindar-image-target", "targetIndex: " + i);
-      var ave3d = window.Aves3D.crearAve3D(ave);
-      ancla.appendChild(ave3d);
+      /* entidad intermedia: sigue al ancla con filtro anti-temblor */
+      var suave = document.createElement("a-entity");
+      suave.setAttribute("suavizar-ancla", "");
+      suave.appendChild(window.Aves3D.crearAve3D(ave));
+      ancla.appendChild(suave);
       escena.appendChild(ancla);
 
       ancla.addEventListener("targetFound", function () { mostrarFicha(i); });
@@ -260,10 +263,100 @@
         if (this.el.sceneEl.canvas) engancha();
         else this.el.sceneEl.addEventListener("renderstart", engancha);
       },
-      tick: function (dt) {
+      tick: function (time, dt) {
         if (this.auto) this.rotY += this.vel * dt / 1000;
         this.el.object3D.rotation.y = this.rotY;
         this.el.object3D.rotation.x = this.rotX;
+      }
+    });
+  }
+
+  /* ---------- componente: suavizado del ancla (anti-temblor) ----------
+     MindAR actualiza la matriz a ~15 fps y con ruido: el ave "vibra" sobre
+     la tarjeta. Cada ancla aloja una entidad intermedia con un filtro
+     One-Euro: casi no suaviza cuando hay movimiento real (no se atrasa)
+     pero rechaza el ruido cuando la tarjeta está quieta. */
+  function registrarSuavizado() {
+    if (typeof AFRAME === "undefined" || AFRAME.components["suavizar-ancla"]) return;
+    AFRAME.registerComponent("suavizar-ancla", {
+      schema: {
+        corteMin: { type: "number", default: 0.5 },  /* Hz de corte en reposo */
+        beta: { type: "number", default: 0.008 },    /* Hz por cada unidad/s */
+        corteVel: { type: "number", default: 1 },    /* Hz de la velocidad */
+        salto: { type: "number", default: 45 }       /* unidades: rezago máximo */
+      },
+      init: function () {
+        var T = AFRAME.THREE;
+        this.ancla = null;
+        this.primera = true;
+        this.posS = new T.Vector3();
+        this.quaS = new T.Quaternion();
+        this.escS = new T.Vector3();
+        this.posR = new T.Vector3();
+        this.quaR = new T.Quaternion();
+        this.escR = new T.Vector3();
+        this.posAnt = new T.Vector3();
+        this.dtSin = 0;
+        this.velS = new T.Vector3();
+        this.velR = new T.Vector3();
+        this.mInv = new T.Matrix4();
+        this.mSuave = new T.Matrix4();
+        this.mLocal = new T.Matrix4();
+      },
+      tick: function (time, dt) {
+        if (!this.ancla) this.ancla = this.el.parentEl;
+        var ancla = this.ancla;
+        if (!ancla || !ancla.object3D) return;
+        if (!ancla.object3D.visible) { this.primera = true; return; }
+
+        var crudo = ancla.object3D.matrix;
+        crudo.decompose(this.posR, this.quaR, this.escR);
+
+        if (this.primera) {
+          this.primera = false;
+          this.posS.copy(this.posR);
+          this.posAnt.copy(this.posR);
+          this.quaS.copy(this.quaR);
+          this.escS.copy(this.escR);
+          this.velS.set(0, 0, 0);
+          this.dtSin = 0;
+          return;
+        }
+
+        var dts = Math.max(0.001, (dt || 16.7) / 1000);
+        this.dtSin += dts;
+
+        /* velocidad real: sólo entre cambios de pose, dividida por el
+           tiempo transcurrido (la pose llega a ~15 fps, no a 60) */
+        if (this.posAnt.distanceToSquared(this.posR) > 1e-10) {
+          this.velR.subVectors(this.posR, this.posAnt).divideScalar(Math.max(0.005, this.dtSin));
+          this.posAnt.copy(this.posR);
+          this.dtSin = 0;
+        } else {
+          this.velR.set(0, 0, 0);
+        }
+        /* versión suavizada: el ruido, al ser aleatorio, casi se cancela
+           en el promedio vectorial */
+        var av = 1 - Math.exp(-2 * Math.PI * this.data.corteVel * dts);
+        this.velS.lerp(this.velR, av);
+
+        /* One-Euro: paso bajo en reposo, alto si la tarjeta se mueve */
+        var h = this.data.corteMin + this.data.beta * this.velS.length();
+        var a = (2 * Math.PI * h * dts) / (1 + 2 * Math.PI * h * dts);
+
+        /* red de seguridad: si el rezago creció demasiado, acelerar */
+        if (this.posS.distanceTo(this.posR) > this.data.salto) a = Math.max(a, 0.5);
+
+        this.posS.lerp(this.posR, a);
+        this.quaS.slerp(this.quaR, a);
+        this.escS.copy(this.escR);
+
+        /* mundo del hijo = inversa(crudo) * suavizado (el ancla vive en la
+           raíz de la escena, por eso su matriz local es también su mundo) */
+        this.mInv.copy(crudo).invert();
+        this.mSuave.compose(this.posS, this.quaS, this.escS);
+        this.mLocal.multiplyMatrices(this.mInv, this.mSuave);
+        this.mLocal.decompose(this.el.object3D.position, this.el.object3D.quaternion, this.el.object3D.scale);
       }
     });
   }
@@ -272,6 +365,7 @@
   function arrancar() {
     escena = $("escena");
     registrarRotar();
+    registrarSuavizado();
 
     cuandoListaEscena(function () {
       /* el sistema se registra al inicializarse la escena */

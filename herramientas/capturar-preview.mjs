@@ -1,4 +1,4 @@
-/* Captura el preview de las 9 aves 3D (herramientas/preview.html)
+/* Captura el preview de las 9 aves 2.5D (herramientas/preview.html)
    Uso:  node capturar-preview.mjs [id-ave]   ->  tmp_test/preview-aves.png
                                               ->  tmp_test/preview-<id>.png  */
 
@@ -75,16 +75,16 @@ async function main() {
     (especie ? "?ave=" + encodeURIComponent(especie) : "");
   await page.goto(url, { waitUntil: "networkidle0", timeout: 40000 });
   const ok = await page.waitForFunction(
-    () => { const s = document.getElementById("escena"); return s && s.hasLoaded; },
+    () => window.__listo,
     { timeout: 30000 }).then(() => true).catch(() => false);
-  if (!ok) console.log("aviso: la escena no senalo hasLoaded");
+  if (!ok) console.log("aviso: los cortes no senalo __listo");
 
   /* deja pasar unos frames para que el renderer dibuje todo */
-  await new Promise(r => setTimeout(r, 2500));
+  await new Promise(r => setTimeout(r, 800));
 
-  const n = await page.$$eval("#jaula > a-entity", e => e.length);
-  const webgl = await page.evaluate(() =>
-    !!document.createElement("canvas").getContext("webgl2"));
+  const n = await page.$$eval("#jaula .celda", e => e.length);
+  const imgsOk = await page.$$eval("#jaula .celda img",
+    els => els.filter(i => i.complete && i.naturalWidth > 0).length);
 
   const salida = path.join(tmp, especie ? `preview-${especie}.png` : "preview-aves.png");
   await page.screenshot({ path: salida });
@@ -93,10 +93,10 @@ async function main() {
   servidor.close();
 
   const esperado = especie ? 1 : 9;
-  console.log(`aves en la jaula: ${n}/${esperado} | WebGL2: ${webgl} | errores: ${errs.length}`);
+  console.log(`aves en la jaula: ${n}/${esperado} | cortes cargados: ${imgsOk}/${n} | errores: ${errs.length}`);
   errs.slice(0, 5).forEach(e => console.log("  " + e));
   console.log("captura:", salida);
-  process.exit(errs.length || n !== esperado ? 1 : 0);
+  process.exit(errs.length || n !== esperado || imgsOk !== n ? 1 : 0);
 }
 
 main().catch(e => {

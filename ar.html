@@ -21,6 +21,18 @@
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false">
 
+    <a-assets timeout="30000">
+      <img id="corte-chimango" src="assets/ave-25d/chimango.png">
+      <img id="corte-carancho" src="assets/ave-25d/carancho.png">
+      <img id="corte-tero" src="assets/ave-25d/tero.png">
+      <img id="corte-martineta" src="assets/ave-25d/martineta.png">
+      <img id="corte-choique" src="assets/ave-25d/choique.png">
+      <img id="corte-cacholote" src="assets/ave-25d/cacholote.png">
+      <img id="corte-loica" src="assets/ave-25d/loica.png">
+      <img id="corte-aguila" src="assets/ave-25d/aguila.png">
+      <img id="corte-flamenco" src="assets/ave-25d/flamenco.png">
+    </a-assets>
+
     <a-camera position="0 0 0" look-controls="enabled: false" wasd-controls="enabled: false">
       <a-entity light="type: directional; color: #ffffff; intensity: 0.9" position="0.4 1 0.6"></a-entity>
     </a-camera>
@@ -38,7 +50,7 @@
     <ol class="pasos">
       <li><strong>Imprimí</strong> las tarjetas de las aves (<a href="tarjetas.html">hoja para imprimir</a>).</li>
       <li><strong>Abrí la cámara</strong> con el botón de abajo y <strong>apuntá</strong> el celular a una tarjeta.</li>
-      <li><strong>¡Aparece el ave en 3D!</strong> Podés caminar alrededor para verla desde todos los lados.</li>
+      <li><strong>¡Aparece el ave con su canto!</strong> Mirala moverse y escuchá el canto de la especie.</li>
     </ol>
 
     <div class="botones-intro">
@@ -58,6 +70,7 @@
 <!-- ===== HUD (se ve sobre la cámara) ===== -->
 <div id="hud" class="oculto">
   <div id="estado" class="estado">Apuntá a una tarjeta…</div>
+  <button id="btn-muto" class="btn-mini" title="Silenciar canto">🔊</button>
   <button id="btn-detener" class="btn-mini" title="Detener cámara">✕</button>
 </div>
 
@@ -82,6 +95,7 @@
   <div class="demo-cab">
     <strong>Modo demo · sin cámara</strong>
     <div class="acciones-demo">
+      <button id="btn-muto-demo" class="btn-mini" title="Silenciar canto">🔊</button>
       <button id="demo-plegar" class="btn-mini" title="Mostrar/ocultar lista de especies">−</button>
       <button id="demo-cerrar" class="btn-mini" title="Salir de la demo">✕</button>
     </div>
@@ -90,7 +104,9 @@
 </div>
 
 <script src="js/datos.js"></script>
-<script src="js/aves3d.js"></script>
+<script src="js/aves25d.js"></script>
+<script src="js/sonidos.js"></script>
+<script src="js/cantos.js"></script>
 <script src="js/ar.js"></script>
 </body>
 </html>

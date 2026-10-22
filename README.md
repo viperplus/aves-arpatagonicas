@@ -2,7 +2,7 @@
 
 App web de **realidad aumentada**: se imprimen tarjetas con aves locales de la
 Patagonia Norte (Río Negro) y, al apuntar con la cámara del celular, aparece el
-ave en 3D sobre la propia tarjeta.
+ave recortada (2.5D) sobre la propia tarjeta **con su canto**.
 
 Funciona en **iPhone y Android desde el navegador** (no hay que instalar nada)
 y se publica gratis en **GitHub Pages**.
@@ -14,14 +14,20 @@ y se publica gratis en **GitHub Pages**.
 ```
 aves-ar/
 ├── index.html          Portada · guía de campo con las 9 fichas
-├── ar.html             Visor de realidad aumentada (cámara + tarjeta + ave 3D)
+├── ar.html             Visor de realidad aumentada (cámara + tarjeta + ave 2.5D)
 ├── tarjetas.html       Hoja para imprimir las 9 tarjetas
 ├── css/aves.css
 ├── js/
 │   ├── datos.js        Fichas de las 9 especies (fuente única de verdad)
 │   ├── aves-svg.js     Ilustraciones SVG de cada ave
-│   ├── aves3d.js       Modelos 3D de cada ave (primitivas de A-Frame)
+│   ├── aves25d.js      Ave 2.5D: recorte animado + sombra (billboard)
+│   ├── sonidos.js      Manifiesto de los cantos (xeno-canto)
+│   ├── cantos.js       Reproductor del canto (con botón de silencio)
+│   ├── videos.js       Manifiesto de los videos de las fichas
 │   └── ar.js           Lógica del visor AR
+├── assets/ave-25d/*.png  Los 9 recortes animados (RGBA)
+├── sonidos/*.mp3       Cantos de xeno-canto (uno por especie)
+├── videos/*.mp4        Videos cortos en bucle para las fichas del index
 ├── tarjetas/*.png      Las 9 tarjetas listas para imprimir
 ├── mind/aves.mind      Marcadores compilados (reconocimiento de imagen)
 ├── lib/                A-Frame + MindAR vendorizados (anda sin internet)
@@ -40,12 +46,13 @@ cacholote, loica, águila mora y flamenco austral**.
 1. **Imprimí** las tarjetas desde `tarjetas.html` (papel mate, 1 tarjeta por hoja).
 2. **Publicá** el sitio en GitHub Pages (ver abajo).
 3. Los alumnos abren la URL en el celular, tocan **Iniciar cámara** y apuntan
-   a una tarjeta. Aparece el ave en 3D, anclada a la tarjeta: si mueven la
-   hoja, el ave se mueve con ella.
+   a una tarjeta. Aparece el ave con su canto, anclada a la tarjeta: si
+   mueven la hoja, el ave se mueve con ella. Hay un botón 🔊/🔇 para
+   silenciar.
 
 También hay un **modo demo sin cámara** (`Ver sin cámara`) para probar en el
-aula con el proyector o en una PC sin webcam: muestra el ave 3D y se rota con
-el mouse o el dedo.
+aula con el proyector o en una PC sin webcam: muestra el ave con su canto y
+una lista para cambiar de especie.
 
 ---
 
@@ -101,6 +108,11 @@ node generar-tarjetas.mjs
 
 # 3. recompilar los marcadores .mind
 node compilar-mind.mjs
+
+# opcional: regenerar el resto de los recursos (los cantos necesitan internet)
+node generar-cortes.mjs     # recortes 2.5D desde las ilustraciones SVG
+node generar-videos.mjs     # videos en bucle de las fichas del index
+node descargar-cantos.mjs   # cantos de xeno-canto.org (con navegador)
 ```
 
 Si cambiás el texto de una especie, editá **`js/datos.js`**, volvé a correr los
@@ -125,9 +137,12 @@ especies, **hay que recompilar siempre**, pasaría a otro índice).
   "marcador" (no hace falta imprimir códigos tipo QR). `mind/aves.mind` guarda
   las características de las 9 imágenes; al encontrar una, MindAR ubica un
   ancla en 3D encima.
-- **A-Frame** arma la escena; las aves se construyen con primitivas
-  (esferas, conos, cilindros) parametrizadas en `js/aves3d.js`, con una
-  animación de balanceo y aleteo.
+- **A-Frame** arma la escena; cada ave es un **recorte PNG** de la misma
+  ilustración impresa (`assets/ave-25d/`) sobre un plano que siempre mira al
+  espectador, con balanceo y saltito (`js/aves25d.js`) y sombra de contacto.
+- **El canto** de cada especie viene de **xeno-canto.org** (licencias
+  Creative Commons, créditos en el pie del index), queda en `sonidos/` y
+  suena con la ficha (`js/cantos.js`).
 - Todo está **vendorizado** en `lib/`, así que anda aunque el colegio no tenga
   internet una vez cargada la página.
 

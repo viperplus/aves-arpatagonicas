@@ -22,12 +22,18 @@
 
 <footer class="pie-pag">
   Nueve especies de la estepa y las lagunas de Río Negro.<br>
-  Imprimí las tarjetas, apuntá con el celular y mirá cada ave en 3D.
+  Imprimí las tarjetas, apuntá con el celular y escuchá a cada ave en RA.
+  <details class="creditos-cantos">
+    <summary>Créditos de los cantos</summary>
+    <ul id="lista-creditos"></ul>
+  </details>
 </footer>
 
 <script src="js/datos.js"></script>
 <script src="js/aves-svg.js"></script>
 <script src="js/videos.js"></script>
+<script src="js/sonidos.js"></script>
+<script src="js/cantos.js"></script>
 <script>
   (function () {
     var grilla = document.getElementById("grilla");
@@ -49,7 +55,10 @@
       card.className = "ficha-card";
       card.style.borderTopColor = a.color;
       card.innerHTML =
-        '<div class="arte">' + arte + videoHTML(a.id) + '</div>' +
+        '<div class="arte">' + arte + videoHTML(a.id) +
+          '<button class="btn-canto" data-ave="' + a.id + '" ' +
+            'aria-label="Escuchar el canto de ' + a.nombre + '">🔊</button>' +
+        '</div>' +
         '<div class="cuerpo">' +
           '<span class="grupo" style="background:' + a.color + '">' + a.grupo + '</span>' +
           '<h3>' + a.nombre + '</h3>' +
@@ -73,7 +82,43 @@
         var p = vid.play();
         if (p && p.catch) p.catch(function () {});
       }
+
+      /* botón de canto de la ficha */
+      var btnc = card.querySelector(".btn-canto");
+      if (btnc && window.CANTOS && window.CANTOS[a.id]) {
+        btnc.addEventListener("click", function () {
+          window.Cantos.desbloquear();
+          if (window.Cantos.sonando() === a.id) {
+            window.Cantos.parar();
+          } else {
+            window.Cantos.reproducir(a.id);
+          }
+          Array.prototype.forEach.call(
+            document.querySelectorAll(".btn-canto"),
+            function (b) {
+              b.textContent =
+                b.dataset.ave === window.Cantos.sonando() ? "🔊" : "🔇";
+            }
+          );
+        });
+      } else if (btnc) {
+        btnc.remove();
+      }
     });
+
+    /* créditos de los cantos (xeno-canto) en el pie */
+    var lic = document.getElementById("lista-creditos");
+    if (lic && window.CANTOS) {
+      window.AVES.forEach(function (a) {
+        var c = window.CANTOS[a.id];
+        if (!c) return;
+        var li = document.createElement("li");
+        li.innerHTML = "<b>" + a.nombre + "</b> — grabación de " +
+          c.grabador + " · " + c.licencia +
+          ' · <a href="' + c.pagina + '" target="_blank" rel="noopener">xeno-canto</a>';
+        lic.appendChild(li);
+      });
+    }
   })();
 </script>
 </body>

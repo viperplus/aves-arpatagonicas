@@ -32,11 +32,13 @@
     $("ficha-dato").textContent = a.dato;
     $("ficha").classList.remove("oculto");
     estado("Tarjeta detectada ✓ " + a.nombre, true);
+    if (window.Cantos) window.Cantos.reproducir(a.id);
   }
 
   function ocultarFicha() {
     $("ficha").classList.add("oculto");
     actual = null;
+    if (window.Cantos) window.Cantos.parar();
     if (!modoDemo) estado("Apuntá a una tarjeta…", false);
     else ajustarDemo();
   }
@@ -55,7 +57,7 @@
       /* entidad intermedia: sigue al ancla con filtro anti-temblor */
       var suave = document.createElement("a-entity");
       suave.setAttribute("suavizar-ancla", "");
-      suave.appendChild(window.Aves3D.crearAve3D(ave, true));
+      suave.appendChild(window.Aves25D.crearAve25D(ave, true));
       ancla.appendChild(suave);
       escena.appendChild(ancla);
 
@@ -74,6 +76,7 @@
     $("hud").classList.remove("oculto");
     modoDemo = false;
     quitarDemo();
+    if (window.Cantos) window.Cantos.desbloquear();
     estado("Iniciando cámara…", false);
 
     try {
@@ -106,6 +109,7 @@
   function iniciarDemo() {
     try { sistema.stop(); } catch (e) {}
     modoDemo = true;
+    if (window.Cantos) window.Cantos.desbloquear();
     $("intro").classList.add("oculto");
     $("hud").classList.add("oculto");
     ocultarFicha();
@@ -116,7 +120,6 @@
     demoAnchor = document.createElement("a-entity");
     demoAnchor.setAttribute("position", "0 -0.1 -1.15");
     demoAnchor.setAttribute("scale", "1.35 1.35 1.35");
-    demoAnchor.setAttribute("rotar-demo", "");
     escena.appendChild(demoAnchor);
 
     ponerAveDemo(0);
@@ -127,7 +130,7 @@
     if (!demoAnchor) return;
     while (demoAnchor.firstChild) demoAnchor.removeChild(demoAnchor.firstChild);
     var ave = window.AVES[i];
-    demoAnchor.appendChild(window.Aves3D.crearAve3D(ave));
+    demoAnchor.appendChild(window.Aves25D.crearAve25D(ave));
     mostrarFichaDemo(i);
     /* marcar chip activo */
     var chips = document.querySelectorAll("#demo-chips .chip");
@@ -211,63 +214,6 @@
       b.style.setProperty("--c", a.color);
       b.addEventListener("click", function () { ponerAveDemo(i); });
       cont.appendChild(b);
-    });
-  }
-
-  /* ---------- componente: rotar con el dedo / mouse (demo) ---------- */
-  function registrarRotar() {
-    if (typeof AFRAME === "undefined" || AFRAME.components["rotar-demo"]) return;
-    AFRAME.registerComponent("rotar-demo", {
-      init: function () {
-        this.rotY = 0;
-        this.rotX = 0;
-        this.vel = 0.15;      /* giro automático lento */
-        this.auto = true;
-        this.arrastre = false;
-        this.ultX = 0;
-        this.ultY = 0;
-        var el = this.el;
-        var self = this;
-
-        function inicio(x, y) {
-          self.arrastre = true;
-          self.auto = false;
-          self.ultX = x;
-          self.ultY = y;
-        }
-        function mueve(x, y) {
-          if (!self.arrastre) return;
-          self.rotY += (x - self.ultX) * 0.01;
-          self.rotX += (y - self.ultY) * 0.01;
-          self.rotX = Math.max(-0.9, Math.min(0.9, self.rotX));
-          self.ultX = x;
-          self.ultY = y;
-        }
-        function fin() { self.arrastre = false; }
-
-        var canvas = this.el.sceneEl.canvas;
-        function engancha() {
-          canvas = self.el.sceneEl.canvas || canvas;
-          if (!canvas) return;
-          canvas.addEventListener("touchstart", function (e) {
-            if (e.touches[0]) inicio(e.touches[0].clientX, e.touches[0].clientY);
-          }, { passive: true });
-          canvas.addEventListener("touchmove", function (e) {
-            if (e.touches[0]) mueve(e.touches[0].clientX, e.touches[0].clientY);
-          }, { passive: true });
-          canvas.addEventListener("touchend", fin);
-          canvas.addEventListener("mousedown", function (e) { inicio(e.clientX, e.clientY); });
-          window.addEventListener("mousemove", function (e) { mueve(e.clientX, e.clientY); });
-          window.addEventListener("mouseup", fin);
-        }
-        if (this.el.sceneEl.canvas) engancha();
-        else this.el.sceneEl.addEventListener("renderstart", engancha);
-      },
-      tick: function (time, dt) {
-        if (this.auto) this.rotY += this.vel * dt / 1000;
-        this.el.object3D.rotation.y = this.rotY;
-        this.el.object3D.rotation.x = this.rotX;
-      }
     });
   }
 
@@ -361,11 +307,36 @@
     });
   }
 
+  /* ---------- silencio del canto ---------- */
+  function actualizarMudo() {
+    var sil = window.Cantos && window.Cantos.silenciado();
+    ["btn-muto", "btn-muto-demo"].forEach(function (id) {
+      var b = $(id);
+      if (b) {
+        b.textContent = sil ? "🔇" : "🔊";
+        b.title = sil ? "Activar canto" : "Silenciar canto";
+      }
+    });
+  }
+
+  function conectarMudo(id) {
+    var b = $(id);
+    if (!b) return;
+    b.addEventListener("click", function () {
+      window.Cantos.desbloquear();
+      window.Cantos.alternar();
+      actualizarMudo();
+    });
+  }
+
   /* ---------- arranque ---------- */
   function arrancar() {
     escena = $("escena");
-    registrarRotar();
+    if (window.Aves25D) window.Aves25D.registrar();
     registrarSuavizado();
+    actualizarMudo();
+    conectarMudo("btn-muto");
+    conectarMudo("btn-muto-demo");
 
     cuandoListaEscena(function () {
       /* el sistema se registra al inicializarse la escena */

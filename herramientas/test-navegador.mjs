@@ -161,6 +161,16 @@ async function main() {
   }, { timeout: 20000 }).catch(() => {});
   const listos = await page.$$eval(".arte-video", e => e.filter(v => v.classList.contains("listo")).length);
   check(listos === 9, `los 9 videos cargan y reproducen (${listos})`);
+  const cantos = await page.evaluate(async () => {
+    const ids = Object.keys(window.CANTOS || {});
+    const ok = await Promise.all(ids.map(id =>
+      fetch("sonidos/" + window.CANTOS[id].archivo).then(r => r.ok).catch(() => false)));
+    return { n: ids.length, ok: ok.filter(Boolean).length };
+  });
+  check(cantos.n === 9 && cantos.ok === 9,
+    `los 9 cantos disponibles (${cantos.ok}/${cantos.n} responden)`);
+  const botones = await page.$$eval(".btn-canto", e => e.length);
+  check(botones === 9, `las 9 fichas tienen boton de canto (${botones})`);
   check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
   await page.screenshot({ path: path.join(tmp, "01-index.png"), fullPage: true });
 
@@ -196,8 +206,9 @@ async function main() {
   await page.waitForFunction(
     () => !document.getElementById("demo").classList.contains("oculto"),
     { timeout: 10000 }).catch(() => {});
-  let n = await page.$eval("[rotar-demo]", el => el.children.length);
-  check(n > 0, `la ave 3D se crea en el modo demo (hijos=${n})`);
+  let n = await page.$$eval("[corte-vivo]",
+    els => els.length ? els[0].children.length : -1);
+  check(n > 0, `el ave 2.5D se crea en el modo demo (hijos=${n})`);
   let nombre = await page.$eval("#ficha-nombre", e => e.textContent.trim());
   check(nombre.length > 0, `se muestra la ficha (${nombre})`);
   await page.screenshot({ path: path.join(tmp, "02-demo.png") });
@@ -209,6 +220,11 @@ async function main() {
     const n2 = await page.$eval("#ficha-nombre", e => e.textContent.trim());
     check(n2 !== nombre && n2.length > 0, `cambia de especie (${nombre} -> ${n2})`);
   }
+  const mudo0 = await page.$eval("#btn-muto-demo", b => b.textContent.trim());
+  await page.click("#btn-muto-demo");
+  const mudo1 = await page.$eval("#btn-muto-demo", b => b.textContent.trim());
+  check(mudo0 !== mudo1, `el boton de silencio alterna (${mudo0} -> ${mudo1})`);
+  await page.click("#btn-muto-demo");
   await page.click("#demo-cerrar");
   const introVisible = await page.$eval("#intro", e => !e.classList.contains("oculto"));
   check(introVisible, "cierra la demo y vuelve a la pantalla inicial");
@@ -235,6 +251,15 @@ async function main() {
   }, { timeout: 60000 }).then(h => h.jsonValue()).catch(() => null);
 
   check(!!detectado, `tarjeta detectada con la camara falsa (${detectado || "nada"})`);
+  if (detectado) {
+    await new Promise(r => setTimeout(r, 400));
+    const suena = await page.evaluate(() =>
+      window.Cantos ? window.Cantos.sonando() : null);
+    check(suena === "chimango",
+      `suena el canto de la especie detectada (${suena || "silencio"})`);
+  } else {
+    check(false, "suena el canto de la especie detectada (no hubo deteccion)");
+  }
   await page.screenshot({ path: path.join(tmp, "03-deteccion.png") });
 
   const aviso = await page.$eval("#aviso-error", e =>

@@ -1,4 +1,4 @@
-/* Genera un video corto en bucle (6 s) de cada ave 3D para las fichas del index.
+/* Genera un video corto en bucle (6 s) de cada ave 2.5D para las fichas del index.
    Graba desde herramientas/video-ave.html con MediaRecorder (canvas.captureStream).
    Salida: videos/<id>.mp4|webm  +  js/videos.js (window.VIDEOS = {id: [archivo]})
    Uso:  node generar-videos.mjs                 -> las 9 especies
@@ -101,9 +101,9 @@ async function main() {
     await page.goto(base + "/herramientas/video-ave.html?ave=" + ave.id,
       { waitUntil: "networkidle0", timeout: 40000 });
     const ok = await page.waitForFunction(
-      () => window.__listo && document.getElementById("escena").hasLoaded,
+      () => window.__listo,
       { timeout: 30000 }).then(() => true).catch(() => false);
-    if (!ok) { fallos.push(ave.id + ": la escena no cargo"); continue; }
+    if (!ok) { fallos.push(ave.id + ": el corte no cargo"); continue; }
 
     await new Promise(r => setTimeout(r, 600));
     await page.screenshot({ path: path.join(tmp, `video-${ave.id}.png`) });

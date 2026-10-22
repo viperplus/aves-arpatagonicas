@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Video · ave 3D</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #efe5cf; }
+  </style>
+  <script src="../lib/aframe.min.js"></script>
+</head>
+<body>
+  <a-scene id="escena" renderer="antialias: true; colorManagement: true"
+    background="color: #efe5cf" vr-mode-ui="enabled: false" embedded>
+    <a-entity light="type: ambient; color: #ffffff; intensity: 0.65"></a-entity>
+    <a-entity light="type: directional; color: #fff8ec; intensity: 0.95;
+      position="1.5 3 2"></a-entity>
+    <a-entity light="type: directional; color: #cfe4f2; intensity: 0.35;
+      position="-2 -1 1.5"></a-entity>
+
+    <a-entity id="punto"></a-entity>
+
+    <a-entity id="cam" camera="fov: 45; near: 0.05; far: 60"
+      position="0 0.185 1.05"></a-entity>
+  </a-scene>
+
+  <script src="../js/datos.js"></script>
+  <script src="../js/aves3d.js"></script>
+  <script>
+    (function () {
+      var m = /[?&]ave=([a-z]+)/i.exec(location.search);
+      var id = m ? m[1] : "chimango";
+      var ave = AVES.find(function (a) { return a.id === id; }) || AVES[0];
+
+      /* giro suave de vaivén: yaw = 35° * sin(2π t / 6) — cierra en bucle exacto */
+      AFRAME.registerComponent("girar-video", {
+        init: function () { this.t = 0; },
+        tick: function (time, dt) {
+          if (!window.__grabando) return;
+          this.t += dt / 1000;
+          this.el.object3D.rotation.y = Math.sin(2 * Math.PI * this.t / 6) * 0.61;
+        }
+      });
+
+      var punto = document.getElementById("punto");
+      punto.setAttribute("girar-video", "");
+      var raiz = Aves3D.crearAve3D(ave);
+      punto.appendChild(raiz);
+
+      window.__especie = ave.id;
+      window.__grabando = false;
+
+      var escena = document.getElementById("escena");
+      function marcarListo() {
+        setTimeout(function () { window.__listo = true; }, 400);
+      }
+      if (escena.hasLoaded) marcarListo();
+      else escena.addEventListener("loaded", marcarListo);
+
+      /* Graba exactamente 6 s desde la pose t=0 (ciclo completo del aleteo)
+         y devuelve el video en base64. */
+      window.__grabar = function () {
+        return new Promise(function (resolve) {
+          try {
+            var canvas = document.querySelector("a-scene canvas");
+            if (!canvas) return resolve({ error: "sin canvas" });
+            var tipos = [
+              "video/mp4;codecs=avc1.42E01E", "video/mp4",
+              "video/webm;codecs=vp9", "video/webm;codecs=vp8", "video/webm"
+            ];
+            var mime = null;
+            for (var i = 0; i < tipos.length; i++) {
+              if (window.MediaRecorder &&
+                  MediaRecorder.isTypeSupported(tipos[i])) { mime = tipos[i]; break; }
+            }
+            if (!mime) return resolve({ error: "MediaRecorder sin formato" });
+
+            var stream = canvas.captureStream(30);
+            var rec = new MediaRecorder(stream,
+              { mimeType: mime, videoBitsPerSecond: 1200000 });
+            var trozos = [];
+            rec.ondataavailable = function (e) {
+              if (e.data && e.data.size) trozos.push(e.data);
+            };
+            rec.onerror = function () { resolve({ error: "error de MediaRecorder" }); };
+            rec.onstop = function () {
+              stream.getTracks().forEach(function (t) { t.stop(); });
+              var blob = new Blob(trozos, { type: mime });
+              var fr = new FileReader();
+              fr.onload = function () {
+                resolve({ mime: mime, especie: window.__especie,
+                  datos: fr.result.split(",")[1] });
+              };
+              fr.readAsDataURL(blob);
+            };
+
+            /* sincroniza ambos relojes en t=0 y arranca la grabación */
+            var v = raiz.components["vuelo-ave"];
+            if (v) v.t = 0;
+            var g = punto.components["girar-video"];
+            if (g) { g.t = 0; g.el.object3D.rotation.y = 0; }
+            window.__grabando = true;
+            rec.start();
+            setTimeout(function () {
+              window.__grabando = false;
+              if (rec.state !== "inactive") rec.stop();
+            }, 6000);
+          } catch (e) {
+            resolve({ error: String(e && e.message || e) });
+          }
+        });
+      };
+    })();
+  </script>
+</body>
+</html>

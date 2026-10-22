@@ -26,7 +26,9 @@ const MIME = {
   ".svg": "image/svg+xml",
   ".mind": "application/octet-stream",
   ".json": "application/json",
-  ".md": "text/plain; charset=utf-8"
+  ".md": "text/plain; charset=utf-8",
+  ".webm": "video/webm",
+  ".mp4": "video/mp4"
 };
 
 let fallos = 0;
@@ -151,6 +153,14 @@ async function main() {
   await page.goto(base + "/index.html", { waitUntil: "networkidle0", timeout: 40000 });
   const fichas = await page.$$eval(".ficha-card", e => e.length);
   check(fichas === 9, `se renderizan las 9 fichas (${fichas})`);
+  const vids = await page.$$eval(".arte-video", e => e.length);
+  check(vids === 9, `las 9 fichas tienen video (${vids})`);
+  await page.waitForFunction(() => {
+    const vs = document.querySelectorAll(".arte-video");
+    return vs.length === 9 && [...vs].every(v => v.classList.contains("listo"));
+  }, { timeout: 20000 }).catch(() => {});
+  const listos = await page.$$eval(".arte-video", e => e.filter(v => v.classList.contains("listo")).length);
+  check(listos === 9, `los 9 videos cargan y reproducen (${listos})`);
   check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
   await page.screenshot({ path: path.join(tmp, "01-index.png"), fullPage: true });
 

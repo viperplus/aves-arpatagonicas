@@ -27,16 +27,29 @@
 
 <script src="js/datos.js"></script>
 <script src="js/aves-svg.js"></script>
+<script src="js/videos.js"></script>
 <script>
   (function () {
     var grilla = document.getElementById("grilla");
+
+    function videoHTML(id) {
+      var arch = window.VIDEOS && window.VIDEOS[id];
+      if (!arch || !arch.length) return "";
+      var src = arch.map(function (f) {
+        return '<source src="videos/' + f + '" type="' +
+          (f.slice(-4) === ".mp4" ? "video/mp4" : "video/webm") + '">';
+      }).join("");
+      return '<video class="arte-video" autoplay loop muted playsinline ' +
+        'preload="auto" aria-hidden="true">' + src + "</video>";
+    }
+
     window.AVES.forEach(function (a) {
       var arte = window.AvesSVG.aveSVG(a, { width: 400, height: 400, colorFondo: "#efe5cf" });
       var card = document.createElement("article");
       card.className = "ficha-card";
       card.style.borderTopColor = a.color;
       card.innerHTML =
-        '<div class="arte">' + arte + '</div>' +
+        '<div class="arte">' + arte + videoHTML(a.id) + '</div>' +
         '<div class="cuerpo">' +
           '<span class="grupo" style="background:' + a.color + '">' + a.grupo + '</span>' +
           '<h3>' + a.nombre + '</h3>' +
@@ -49,6 +62,17 @@
           '</div>' +
         '</div>';
       grilla.appendChild(card);
+
+      /* el video tapa el SVG recién cuando puede reproducir; si falla, queda el SVG */
+      var vid = card.querySelector(".arte-video");
+      if (vid) {
+        var marca = function () { vid.classList.add("listo"); };
+        if (vid.readyState >= 3) marca();
+        else vid.addEventListener("canplay", marca);
+        vid.addEventListener("error", function () { vid.remove(); });
+        var p = vid.play();
+        if (p && p.catch) p.catch(function () {});
+      }
     });
   })();
 </script>

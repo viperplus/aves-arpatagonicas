@@ -74,7 +74,8 @@ async function generarCamaraTemblorosa() {
       for (let x = 0; x < W; x++) {
         const i = (y * W + x) * 4;
         const r = d[i], g = d[i + 1], b = d[i + 2];
-        yBuf[y * W + x] = cl(0.299 * r + 0.587 * g + 0.114 * b);
+        /* YUV4MPEG sin tag = BT.601 rango limitado -> codificar en limitado */
+        yBuf[y * W + x] = cl(16 + (0.299 * r + 0.587 * g + 0.114 * b) * 219 / 255);
         const ci = (y >> 1) * (W >> 1) + (x >> 1);
         uAcc[ci] += -0.168736 * r - 0.331264 * g + 0.5 * b + 128;
         vAcc[ci] += 0.5 * r - 0.418688 * g - 0.081312 * b + 128;
@@ -83,8 +84,8 @@ async function generarCamaraTemblorosa() {
     }
     const uBuf = Buffer.alloc(W * H / 4), vBuf = Buffer.alloc(W * H / 4);
     for (let i = 0; i < uBuf.length; i++) {
-      uBuf[i] = cl(uAcc[i] / cnt[i]);
-      vBuf[i] = cl(vAcc[i] / cnt[i]);
+      uBuf[i] = cl(128 + (uAcc[i] / cnt[i] - 128) * 224 / 255);
+      vBuf[i] = cl(128 + (vAcc[i] / cnt[i] - 128) * 224 / 255);
     }
     partes.push(marco, yBuf, uBuf, vBuf);
   }

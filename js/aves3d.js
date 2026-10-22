@@ -2,10 +2,31 @@
    Se anclan a la tarjeta: 1 unidad local = ancho de la tarjeta.
    Convención MindAR: la tarjeta está en XY, +Z sale hacia el viewer,
    +Y es "arriba" (hacia el borde superior de la tarjeta).
-   Se construyen en Y-up y con un leve offset en +Z para "flotar" sobre la tarjeta. */
+   El ave mira hacia +X, parada sobre la tarjeta con un leve offset en +Z.
+
+   Estructura anatómica: cuerpo de tres elipsoides (pecho, vientre, raíz
+   de cola), cuello de esferas encadenadas, cabeza con ojo-abalorio y
+   pico embutido, alas plegadas con primarias, cola en abanico, patas
+   finas con cuatro dedos y sombra de contacto. */
 
 (function (global) {
   "use strict";
+
+  /* silueta por especie: escala general y proporciones del cuerpo */
+  var SILUETA = {
+    chimango:  { escala: 1.00, cu: [1.45, 0.95, 0.86] },
+    carancho:  { escala: 1.05, cu: [1.45, 0.95, 0.84] },
+    tero:      { escala: 0.95, cu: [1.40, 1.00, 0.90] },
+    martineta: { escala: 1.02, cu: [1.50, 1.10, 1.00] },
+    choique:   { escala: 1.08, cu: [1.45, 1.12, 1.00] },
+    cacholote: { escala: 0.92, cu: [1.40, 1.05, 0.95] },
+    loica:     { escala: 0.86, cu: [1.40, 0.95, 0.85] },
+    aguila:    { escala: 1.12, cu: [1.50, 0.98, 0.88] },
+    flamenco:  { escala: 1.00, cu: [1.40, 0.92, 0.80] }
+  };
+
+  /* tamaño relativo del pico por especie */
+  var PICO_ESC = { aguila: 1.2, carancho: 1.1, flamenco: 1.15, choique: 0.9, tero: 0.9 };
 
   /* crea una entidad A-Frame con los atributos dados */
   function ent(attrs) {
@@ -17,7 +38,7 @@
   }
 
   function material(color, opts) {
-    var m = { color: color, roughness: 0.85, metalness: 0 };
+    var m = { color: color, roughness: 0.88, metalness: 0 };
     if (opts && opts.transparent) {
       m.transparent = true;
       m.opacity = opts.opacity;
@@ -28,7 +49,7 @@
   /* esfera (posiblemente achatada y rotada) */
   function esfera(color, radio, pos, scale, rot) {
     return ent({
-      geometry: "primitive: sphere; radius: " + radio + "; segmentsWidth: 16; segmentsHeight: 12",
+      geometry: "primitive: sphere; radius: " + radio + "; segmentsWidth: 20; segmentsHeight: 14",
       material: material(color),
       position: pos || "0 0 0",
       scale: scale || "1 1 1",
@@ -36,7 +57,7 @@
     });
   }
 
-  /* caja (para cola, alas simples) */
+  /* caja (cola, dedos, primarias) */
   function caja(color, dim, pos, rot) {
     return ent({
       geometry: "primitive: box; width: " + dim[0] + "; height: " + dim[1] + "; depth: " + dim[2],
@@ -46,7 +67,7 @@
     });
   }
 
-  /* cono (pico, penacho, patas) */
+  /* cono (pico, penacho) */
   function cono(color, r, h, pos, rot) {
     return ent({
       geometry: "primitive: cone; radiusBottom: " + r + "; radiusTop: 0; height: " + h + "; segmentsRadial: 12",
@@ -60,205 +81,252 @@
   function cilindro(color, r, h, pos, rot, rTop) {
     return ent({
       geometry: "primitive: cylinder; radius: " + r + "; radiusTop: " + (rTop !== undefined ? rTop : r) +
-        "; height: " + h + "; segmentsRadial: 12",
+        "; height: " + h + "; segmentsRadial: 10",
       material: material(color),
       position: pos,
       rotation: rot || "0 0 0"
     });
   }
 
-  /* ojo completo (blanco + pupila) en una posición lateral */
-  function ojo(pos) {
-    var g = document.createElement("a-entity");
-    g.setAttribute("position", pos);
-    g.appendChild(esfera("#ffffff", 0.028, "0 0 0"));
-    g.appendChild(esfera("#111111", 0.017, "0.014 0 0.014"));
+  /* ojo: cuenta oscura con un destello, embutida en la cabeza.
+      lado = +1 (ojo derecho, +Z) o -1 */
+  function ojo(pos, lado, color) {
+    var g = ent({ position: pos });
+    g.appendChild(esfera(color || "#141414", 0.0115, "0 0 0"));
+    g.appendChild(esfera("#ffffff", 0.0035, "0.004 0.004 " + (0.006 * lado)));
     return g;
   }
 
-  /* pico según forma */
-  function pico(tipo, p, posBase) {
-    var g = document.createElement("a-entity");
-    g.setAttribute("position", posBase);
-    var c = p.pico;
+  /* pico según forma; escala relativa al tamaño de cabeza */
+  function pico(tipo, p, posBase, esc) {
+    esc = esc || 1;
+    var g = ent({ position: posBase });
     if (tipo === "gancho") {
-      /* cono hacia adelante + gancho bajado */
-      g.appendChild(cono(c, 0.035, 0.11, "0.05 0 0", "0 0 -90"));
-      g.appendChild(cono(c, 0.028, 0.07, "0.11 -0.03 0", "0 0 -150"));
+      /* rapaz: cono corto y gancho recurvado que parte de la punta */
+      g.appendChild(cono(p.pico, 0.023 * esc, 0.068 * esc, 0.053 * esc + " -0.004 0", "0 0 -93"));
+      g.appendChild(cono(p.pico, 0.012 * esc, 0.032 * esc,
+        0.079 * esc + " " + (-0.022 * esc) + " 0", "0 0 150"));
     } else if (tipo === "ganchudo") {
-      /* flamenco: cono grueso curvado hacia abajo */
-      g.appendChild(cono(c, 0.038, 0.1, "0.04 0 0", "0 0 -90"));
-      g.appendChild(cono(c, 0.032, 0.1, "0.1 -0.05 0", "0 0 -135"));
-      /* punta negra */
-      g.appendChild(esfera("#1a1a1a", 0.02, "0.13 -0.08 0"));
+      /* flamenco: pico grueso que baja en ángulo con punta negra */
+      g.appendChild(cono(p.pico, 0.028 * esc, 0.055 * esc, 0.048 * esc + " -0.004 0", "0 0 -90"));
+      g.appendChild(cono(p.pico, 0.024 * esc, 0.06 * esc, 0.084 * esc + " -0.034 0", "0 0 -128"));
+      g.appendChild(cono(p.detalle, 0.017 * esc, 0.042 * esc, 0.105 * esc + " -0.063 0", "0 0 -136"));
     } else if (tipo === "fino") {
-      g.appendChild(cono(c, 0.02, 0.1, "0.05 0 0", "0 0 -90"));
+      g.appendChild(cono(p.pico, 0.013 * esc, 0.085 * esc, 0.056 * esc + " -0.005 0", "0 0 -95"));
     } else {
       /* recto */
-      g.appendChild(cono(c, 0.03, 0.1, "0.05 0 0", "0 0 -90"));
+      g.appendChild(cono(p.pico, 0.019 * esc, 0.078 * esc, 0.052 * esc + " -0.005 0", "0 0 -94"));
     }
     return g;
   }
 
   /* penacho sobre la cabeza */
   function cresta(tipo, p, pos) {
-    var g = document.createElement("a-entity");
-    g.setAttribute("position", pos);
+    var g = ent({ position: pos });
     if (tipo === "adelante") {
-      /* martineta: flequillo hacia adelante */
-      g.appendChild(cono(p.detalle, 0.02, 0.08, "0 -0.01 0", "0 0 40"));
-      g.appendChild(cono(p.cabeza, 0.018, 0.07, "0.03 0 0", "0 0 25"));
+      /* flequillo hacia adelante (martineta) */
+      g.appendChild(cono(p.detalle, 0.013, 0.07, "0.006 0.018 0", "0 0 -46"));
+      g.appendChild(cono(p.cabeza, 0.011, 0.055, "-0.014 0.02 0", "0 0 -68"));
     } else {
-      /* cacholote / carancho: cresta erguida */
-      g.appendChild(cono(p.detalle, 0.02, 0.07, "0 0 0", "0 0 0"));
-      g.appendChild(cono(p.cabeza, 0.018, 0.06, "0.03 0 0", "0 0 -8"));
-      g.appendChild(cono(p.detalle, 0.016, 0.05, "0.055 0 0", "0 0 -20"));
+      /* cresta erguida hacia atrás (carancho, cacholote) */
+      g.appendChild(cono(p.cabeza, 0.013, 0.062, "0.006 0.022 0", "0 0 26"));
+      g.appendChild(cono(p.detalle, 0.012, 0.055, "-0.018 0.022 0", "0 0 48"));
+      g.appendChild(cono(p.cabeza, 0.01, 0.045, "-0.038 0.018 0", "0 0 66"));
     }
     return g;
   }
 
-  /* construcción de una ave completa */
-  function crearAve3D(ave) {
+  /* patas finas con cuatro dedos; ligeramente desfasadas en X (paso) */
+  function patas(p, hPata, yCuerpo) {
+    var g = ent({ position: "0.012 0 0" });
+    var tobillo = Math.max(0.05, hPata * 0.5);
+    [{ z: 0.05, dx: 0.024 }, { z: -0.05, dx: -0.016 }].forEach(function (l) {
+      var pierna = ent({ position: l.dx + " 0 " + l.z });
+      /* tarsometatarso visible */
+      pierna.appendChild(cilindro(p.patas, 0.0095, tobillo,
+        "0 " + (tobillo / 2 + 0.012) + " 0"));
+      /* muslo (cubierto de plumas arriba) */
+      pierna.appendChild(cilindro(p.patas, 0.0125, Math.max(0.03, yCuerpo - 0.07 - tobillo),
+        "0 " + ((yCuerpo - 0.07 + tobillo) / 2) + " 0"));
+      /* dedos */
+      pierna.appendChild(caja(p.patas, [0.058, 0.01, 0.011], "0.028 0.012 0"));
+      pierna.appendChild(caja(p.patas, [0.048, 0.01, 0.011], "0.022 0.012 0.024", "0 42 0"));
+      pierna.appendChild(caja(p.patas, [0.048, 0.01, 0.011], "0.022 0.012 -0.024", "0 -42 0"));
+      pierna.appendChild(caja(p.patas, [0.038, 0.01, 0.011], "-0.016 0.012 0", "0 180 0"));
+      g.appendChild(pierna);
+    });
+    return g;
+  }
+
+  /* cabeza completa (esfera, ojos, pico, cresta) en el origen local */
+  function construirCabeza(p, f, ave, rCab) {
+    var g = ent({});
+    g.appendChild(esfera(p.cabeza, rCab, "0 0 0", "1.12 1 0.97"));
+    var zf = rCab * 0.88;
+    g.appendChild(ojo("0.024 " + (rCab * 0.3) + " " + zf, 1, p.ojo));
+    g.appendChild(ojo("0.024 " + (rCab * 0.3) + " " + (-zf), -1, p.ojo));
+    if (ave.id === "carancho") {
+      /* cara descubierta y anaranjada */
+      g.appendChild(esfera("#e08a2e", 0.04, "0.032 -0.006 0", "0.95 0.8 1.2"));
+    }
+    var escPico = (rCab / 0.053) * (PICO_ESC[ave.id] || 1);
+    g.appendChild(pico(f.pico, p, "0.04 -0.006 0", escPico));
+    if (f.cresta === true) g.appendChild(cresta(true, p, "-0.005 0.038 0"));
+    else if (f.cresta === "adelante") g.appendChild(cresta("adelante", p, "0.005 0.04 0"));
+    return g;
+  }
+
+  /* construcción de una ave completa.
+     conPanel = true agrega un plano del color de la tarjeta detrás del ave,
+     para enmascarar la ilustración impresa (solo en modo tarjeta AR). */
+  function crearAve3D(ave, conPanel) {
     var p = ave.paleta;
     var f = ave.forma;
+    var s = SILUETA[ave.id] || { escala: 1, cu: [1.45, 0.95, 0.86] };
 
-    /* raíz: se coloca sobre la tarjeta (+Z leve) */
-    var raiz = document.createElement("a-entity");
-    raiz.setAttribute("position", "0 0 0.04");
+    /* raíz: los pies coinciden con la ilustración impresa (y ≈ -0.05) */
+    var raiz = ent({
+      position: "0 -0.05 0.04",
+      scale: s.escala + " " + s.escala + " " + s.escala
+    });
 
-    /* contenedor que "camina" (balanceo) */
+    /* contenedor que "camina" (balanceo) — debe ser el primer hijo */
     var cuerpo = document.createElement("a-entity");
     raiz.appendChild(cuerpo);
 
-    /* --- altura del cuerpo según largo de patas --- */
-    var hPata = f.patas === "largas" ? 0.34 : f.patas === "medianas" ? 0.2 : 0.14;
-    var yCuerpo = hPata + 0.13; /* centro del cuerpo sobre los pies */
+    /* altura del cuerpo según largo de patas */
+    var hPata = f.patas === "largas" ? 0.25 : 0.15;
+    var yCuerpo = hPata + 0.08;
 
-    /* sombra suave en la tarjeta */
+    /* sombra de contacto sobre la tarjeta (óvalo tenue bajo los pies) */
     raiz.appendChild(ent({
-      geometry: "primitive: circle; radius: 0.16",
-      material: material("#000000", { transparent: true, opacity: 0.22 }),
-      position: "0 0 -0.03",
-      rotation: "0 0 0"
+      geometry: "primitive: circle; radius: 0.13",
+      material: material("#000000", { transparent: true, opacity: 0.16 }),
+      position: "0.012 -0.014 -0.036",
+      scale: "1 0.5 1"
     }));
 
-    /* --- patas --- */
-    var patas = document.createElement("a-entity");
-    var largoP = hPata;
-    var yMedio = yCuerpo - 0.1;
-    [ -0.045, 0.045 ].forEach(function (z) {
-      /* muslo */
-      patas.appendChild(cilindro(p.patas, 0.016, 0.06, "0.01 " + (yMedio) + " " + z));
-      /* pierna inferior */
-      patas.appendChild(cilindro(p.patas, 0.012, largoP - 0.05, "0.01 " + (largoP / 2) + " " + z));
-      /* dedos */
-      patas.appendChild(caja(p.patas, [0.07, 0.012, 0.012], "0.03 0.008 " + z, "0 0 0"));
-      patas.appendChild(caja(p.patas, [0.05, 0.012, 0.012], "0.01 0.008 " + (z + 0.02), "0 0 0"));
-      patas.appendChild(caja(p.patas, [0.05, 0.012, 0.012], "0.01 0.008 " + (z - 0.02), "0 0 0"));
-    });
-    cuerpo.appendChild(patas);
+    /* --- patas y pies --- */
+    cuerpo.appendChild(patas(p, hPata, yCuerpo));
 
-    /* --- cuerpo (elipsoide alargado en X) --- */
-    var cuerpoEnt = esfera(p.cuerpo, 0.15, "0 " + yCuerpo + " 0", "1.45 1 1.05", "0 0 -6");
-    cuerpo.appendChild(cuerpoEnt);
-    /* panza clara */
-    cuerpo.appendChild(esfera(p.barriga, 0.13, "0.03 " + (yCuerpo - 0.045) + " 0", "1.25 0.8 1"));
-    /* ala derecha (+Z) */
-    var alaDer = esfera(p.ala, 0.12, "-0.01 " + (yCuerpo + 0.03) + " 0.075", "1.3 0.75 0.35", "0 0 -8");
+    /* --- cuerpo: tres elipsoides (pecho, abdomen, raíz de cola) --- */
+    cuerpo.appendChild(esfera(p.cuerpo, 0.1, "0 " + yCuerpo + " 0",
+      s.cu[0] + " " + s.cu[1] + " " + s.cu[2], "0 0 5"));
+    cuerpo.appendChild(esfera(p.cuerpo, 0.078, "0.075 " + (yCuerpo + 0.02) + " 0", "1.1 1 0.95"));
+    cuerpo.appendChild(esfera(p.cuerpo, 0.07, "-0.11 " + (yCuerpo - 0.01) + " 0", "1.1 0.9 0.92"));
+    /* barriga clara (se integra al pecho, no cuelga) */
+    cuerpo.appendChild(esfera(p.barriga, 0.078, "0.045 " + (yCuerpo - 0.042) + " 0", "1.3 0.6 1.02"));
+
+    /* --- alas plegadas (llegan sobre la base de la cola) --- */
+    var alaDer = esfera(p.ala, 0.09, "-0.03 " + (yCuerpo + 0.04) + " 0.073", "1.72 0.6 0.26", "0 0 -10");
     alaDer.classList.add("ala", "ala-der");
     cuerpo.appendChild(alaDer);
-    /* ala izquierda (-Z) */
-    var alaIzq = esfera(p.ala, 0.12, "-0.01 " + (yCuerpo + 0.03) + " -0.075", "1.3 0.75 0.35", "0 0 -8");
+    var alaIzq = esfera(p.ala, 0.09, "-0.03 " + (yCuerpo + 0.04) + " -0.073", "1.72 0.6 0.26", "0 0 -10");
     alaIzq.classList.add("ala", "ala-izq");
     cuerpo.appendChild(alaIzq);
+    /* primarias plegadas bajo el ala (no sobresalen como barras) */
+    var colorPrim = ave.id === "flamenco" ? p.detalle : p.ala;
+    [0.05, -0.05].forEach(function (z, i) {
+      cuerpo.appendChild(caja(colorPrim, [0.095, 0.03, 0.042],
+        "-0.13 " + (yCuerpo - 0.008) + " " + z, "0 " + (i ? -6 : 6) + " -8"));
+    });
 
-    /* --- cuello --- */
-    var yCabeza, xCabeza;
-    if (f.cuello === "largo") {
-      /* flamenco / choique: cuello largo erguido */
-      yCabeza = yCuerpo + 0.34;
-      xCabeza = 0.12;
-      /* segmentos del cuello formando una curva suave */
-      var n = 6;
+    /* --- cuello y cabeza --- */
+    var cabezaPos;
+    if (f.cuello === "largo" && ave.id === "flamenco") {
+      /* cuello en S: sale del pecho, se curva hacia adelante y sube */
+      var P0 = [0.05, yCuerpo + 0.05], P1 = [0.235, yCuerpo + 0.3], P2 = [0.125, yCuerpo + 0.5];
+      var n = 14;
       for (var i = 0; i < n; i++) {
-        var t = i / (n - 1);
-        var x = 0.04 + t * (xCabeza - 0.04);
-        var y = (yCuerpo + 0.06) + t * (yCabeza - yCuerpo - 0.06);
-        cuerpo.appendChild(esfera(p.cuerpo, 0.045 - t * 0.012, x + " " + y + " 0"));
+        var t = i / (n - 1), it = 1 - t;
+        var bx = it * it * P0[0] + 2 * it * t * P1[0] + t * t * P2[0];
+        var by = it * it * P0[1] + 2 * it * t * P1[1] + t * t * P2[1];
+        cuerpo.appendChild(esfera(p.cuerpo, 0.052 - t * 0.017, bx + " " + by + " 0"));
       }
+      cabezaPos = [P2[0] + 0.005, P2[1] + 0.045];
+    } else if (f.cuello === "largo") {
+      /* choique: cuello erguido */
+      var n2 = 12;
+      for (var j = 0; j < n2; j++) {
+        var t2 = j / (n2 - 1);
+        cuerpo.appendChild(esfera(p.cuerpo, 0.054 - t2 * 0.017,
+          (0.05 + t2 * 0.09) + " " + (yCuerpo + 0.06 + t2 * 0.3) + " 0"));
+      }
+      cabezaPos = [0.155, yCuerpo + 0.4];
     } else if (f.cuello === "medio") {
-      yCabeza = yCuerpo + 0.2;
-      xCabeza = 0.14;
-      cuerpo.appendChild(cilindro(p.cuerpo, 0.045, 0.16,
-        (0.1 + (xCabeza - 0.1) / 2) + " " + (yCuerpo + 0.12) + " 0", "0 0 -20"));
+      var n3 = 6;
+      for (var k = 0; k < n3; k++) {
+        var t3 = k / (n3 - 1);
+        cuerpo.appendChild(esfera(p.cuerpo, 0.052 - t3 * 0.008,
+          (0.07 + t3 * 0.05) + " " + (yCuerpo + 0.05 + t3 * 0.1) + " 0"));
+      }
+      cabezaPos = [0.14, yCuerpo + 0.185];
     } else {
-      /* cuello corto: cabeza casi pegada al cuerpo */
-      yCabeza = yCuerpo + 0.14;
-      xCabeza = 0.15;
-      cuerpo.appendChild(esfera(p.cuerpo, 0.07, "0.12 " + (yCuerpo + 0.08) + " 0"));
+      /* cuello corto: cabeza alerta casi sobre el pecho */
+      cuerpo.appendChild(esfera(p.cuerpo, 0.052, "0.085 " + (yCuerpo + 0.055) + " 0", "1.15 1.05 1"));
+      cabezaPos = [0.145, yCuerpo + 0.125];
     }
 
-    /* --- cabeza --- */
-    var cabeza = document.createElement("a-entity");
-    cabeza.setAttribute("position", xCabeza + " " + yCabeza + " 0");
-    cabeza.appendChild(esfera(p.cabeza, 0.075, "0 0 0", "1.05 1 1"));
-
-    /* ojos (ambos lados) */
-    cabeza.appendChild(ojo("0.03 0.02 0.055"));
-    cabeza.appendChild(ojo("0.03 0.02 -0.055"));
-
-    /* pico */
-    cabeza.appendChild(pico(f.pico, p, "0.05 -0.01 0"));
-
-    /* penacho */
-    if (f.cresta === true) cabeza.appendChild(cresta(true, p, "-0.01 0.07 0"));
-    else if (f.cresta === "adelante") cabeza.appendChild(cresta("adelante", p, "0.01 0.07 0"));
-
-    /* marcas faciales especiales */
-    if (ave.id === "carancho") {
-      /* cara naranja descubierta */
-      cabeza.appendChild(esfera("#e08a2e", 0.045, "0.035 -0.005 0", "1 0.9 1.1"));
-    }
+    var rCab = f.cuello === "largo" ? 0.045 : 0.053;
+    var cabeza = construirCabeza(p, f, ave, rCab);
+    cabeza.setAttribute("position", cabezaPos[0] + " " + cabezaPos[1] + " 0");
     cuerpo.appendChild(cabeza);
 
-    /* --- cola --- */
-    var cola = document.createElement("a-entity");
-    cola.setAttribute("position", (-0.19) + " " + (yCuerpo + 0.02) + " 0");
+    /* tope de altura: que la cabeza no tape el título impreso de la tarjeta */
+    var hBruto = cabezaPos[1] + rCab + (f.cresta ? 0.06 : 0);
+    var sFinal = Math.min(s.escala, 0.47 / hBruto);
+    raiz.setAttribute("scale", sFinal + " " + sFinal + " " + sFinal);
+
+    /* --- cola en cuña: elipsoides achatados (se lee bien de perfil) --- */
+    var cola = ent({ position: "-0.14 " + (yCuerpo + 0.035) + " 0" });
     if (f.cola === "larga") {
-      cola.appendChild(caja(p.cola, [0.24, 0.03, 0.09], "-0.1 0 0", "0 0 12"));
-      cola.appendChild(caja(p.detalle, [0.2, 0.006, 0.07], "-0.1 0.02 0", "0 0 12"));
+      cola.appendChild(esfera(p.cola, 0.08, "-0.062 -0.03 0", "1.7 0.42 0.75", "0 0 9"));
+      cola.appendChild(esfera(p.cola, 0.07, "-0.058 -0.034 0.05", "1.6 0.4 0.58", "0 14 11"));
+      cola.appendChild(esfera(p.cola, 0.07, "-0.058 -0.034 -0.05", "1.6 0.4 0.58", "0 -14 7"));
+      /* banda oscura en la punta de la cola */
+      cola.appendChild(esfera(p.detalle, 0.05, "-0.135 -0.028 0", "1.2 0.36 0.74", "0 0 9"));
     } else if (f.cola === "abierta") {
-      cola.appendChild(caja(p.cola, [0.2, 0.03, 0.07], "-0.09 0 0", "0 12 14"));
-      cola.appendChild(caja(p.cola, [0.2, 0.03, 0.07], "-0.09 0 0", "0 -12 14"));
-      cola.appendChild(caja(p.cola, [0.18, 0.03, 0.06], "-0.08 0 0", "0 0 14"));
+      cola.appendChild(esfera(p.cola, 0.08, "-0.072 -0.012 0", "1.85 0.5 0.7", "0 0 10"));
+      cola.appendChild(esfera(p.cola, 0.07, "-0.066 -0.016 0.05", "1.7 0.42 0.55", "0 26 18"));
+      cola.appendChild(esfera(p.cola, 0.07, "-0.066 -0.016 -0.05", "1.7 0.42 0.55", "0 -26 2"));
+      cola.appendChild(esfera(p.detalle, 0.055, "-0.125 -0.002 0", "1.4 0.36 0.62", "0 0 10"));
     } else {
-      cola.appendChild(caja(p.cola, [0.14, 0.03, 0.08], "-0.06 0 0", "0 0 14"));
+      cola.appendChild(esfera(p.cola, 0.07, "-0.058 -0.014 0", "1.6 0.45 0.7", "0 0 12"));
+      cola.appendChild(esfera(p.cola, 0.06, "-0.054 -0.018 0.042", "1.5 0.4 0.55", "0 16 14"));
+      cola.appendChild(esfera(p.cola, 0.06, "-0.054 -0.018 -0.042", "1.5 0.4 0.55", "0 -16 10"));
     }
     cuerpo.appendChild(cola);
 
-    /* --- marcas de color especiales (pecho, etc.) --- */
+    /* --- marcas de color especiales --- */
     if (ave.id === "tero") {
-      cuerpo.appendChild(esfera("#2e3540", 0.09, "0.06 " + (yCuerpo + 0.03) + " 0", "1 1.1 1.15"));
-      cuerpo.appendChild(esfera("#f2f2ee", 0.075, "0.1 " + (yCuerpo + 0.09) + " 0", "0.9 0.9 1.1"));
-    } else if (ave.id === "loica") {
-      cuerpo.appendChild(esfera("#c94f2e", 0.1, "0.05 " + (yCuerpo - 0.01) + " 0", "1.1 1 1.1"));
-    } else if (ave.id === "aguila") {
-      cuerpo.appendChild(esfera("#e8e2d2", 0.11, "0.04 " + (yCuerpo - 0.01) + " 0", "1.2 0.95 1.05"));
-    } else if (ave.id === "flamenco") {
-      /* punta alar negra */
-      cuerpo.appendChild(esfera("#1a1a1a", 0.05, "-0.14 " + (yCuerpo + 0.03) + " 0.08", "1.4 0.5 0.3"));
-      cuerpo.appendChild(esfera("#1a1a1a", 0.05, "-0.14 " + (yCuerpo + 0.03) + " -0.08", "1.4 0.5 0.3"));
+      /* banda pechera oscura y garganta blanca */
+      cuerpo.appendChild(esfera(p.ala, 0.07, "0.1 " + (yCuerpo + 0.03) + " 0", "0.55 0.8 1.15"));
+      cuerpo.appendChild(esfera(p.detalle, 0.055, "0.115 " + (yCuerpo + 0.1) + " 0", "0.7 0.7 1.05"));
     } else if (ave.id === "chimango") {
-      /* manchas claras en el ala */
-      cuerpo.appendChild(esfera(p.barriga, 0.04, "-0.03 " + (yCuerpo + 0.06) + " 0.09", "1.6 0.5 0.2"));
+      /* parche claro en el ala */
+      cuerpo.appendChild(esfera(p.barriga, 0.03, "-0.05 " + (yCuerpo + 0.075) + " 0.1", "1.7 0.4 0.3"));
+      cuerpo.appendChild(esfera(p.barriga, 0.03, "-0.05 " + (yCuerpo + 0.075) + " -0.1", "1.7 0.4 0.3"));
     } else if (ave.id === "choique") {
-      /* parche blanco alar */
-      cuerpo.appendChild(esfera("#e8e2d2", 0.06, "-0.03 " + (yCuerpo + 0.05) + " 0.085", "1.4 0.7 0.25"));
+      /* parche blanco en el ala */
+      cuerpo.appendChild(esfera(p.detalle, 0.038, "-0.07 " + (yCuerpo - 0.025) + " 0.085", "1.5 0.55 0.5"));
+      cuerpo.appendChild(esfera(p.detalle, 0.038, "-0.07 " + (yCuerpo - 0.025) + " -0.085", "1.5 0.55 0.5"));
     }
 
-    /* animación de vuelo/balanceo */
+    /* animación de balanceo */
     raiz.setAttribute("vuelo-ave", "");
 
+    if (conPanel) {
+      /* enmascara la ilustración impresa; plano sin iluminación (flat)
+         del mismo color de fondo de la tarjeta, detrás de todas las piezas */
+      var cont = ent({ position: "0 0 0" });
+      cont.appendChild(ent({
+        geometry: "primitive: plane; width: 0.6; height: 0.46",
+        material: "shader: flat; color: #f6efdf",
+        position: "0 0.13 -0.08"
+      }));
+      cont.appendChild(raiz);
+      return cont;
+    }
     return raiz;
   }
 
@@ -276,16 +344,16 @@
         var t = this.t;
         /* balanceo vertical sutil del cuerpo */
         if (this.cuerpo) {
-          this.cuerpo.object3D.position.y = Math.sin(t * 1.6) * 0.012;
-          this.cuerpo.object3D.rotation.z = Math.sin(t * 1.1) * 0.05;
+          this.cuerpo.object3D.position.y = Math.sin(t * 1.6) * 0.008;
+          this.cuerpo.object3D.rotation.z = Math.sin(t * 1.1) * 0.035;
         }
         /* aleteo: rápido por ráfagas, luego quieto */
         var ciclo = t % 6;
         var aleteo = 0;
         if (ciclo < 1.2) {
-          aleteo = Math.sin(ciclo * 18) * 0.5;
+          aleteo = Math.sin(ciclo * 14) * 0.35;
         } else {
-          aleteo = Math.sin(t * 1.3) * 0.06;
+          aleteo = Math.sin(t * 1.3) * 0.05;
         }
         if (this.alaDer) this.alaDer.object3D.rotation.x = aleteo;
         if (this.alaIzq) this.alaIzq.object3D.rotation.x = -aleteo;

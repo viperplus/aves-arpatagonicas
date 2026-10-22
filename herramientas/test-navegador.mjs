@@ -67,13 +67,17 @@ async function generarCamaraFalsa() {
   const uAcc = new Float64Array((W / 2) * (H / 2));
   const vAcc = new Float64Array((W / 2) * (H / 2));
   const cnt = new Uint16Array((W / 2) * (H / 2));
+  /* YUV4MPEG sin tag de colorspace = BT.601 rango limitado (16-235 / 16-240):
+     hay que codificar en limitado o el decoder recolorea (tarjeta lavada). */
   const cl = v => v < 0 ? 0 : v > 255 ? 255 : Math.round(v);
+  const limY = yf => 16 + yf * 219 / 255;
+  const limC = c => 128 + c * 224 / 255;
 
   for (let y = 0; y < H; y++) {
     for (let x = 0; x < W; x++) {
       const i = (y * W + x) * 4;
       const r = d[i], g = d[i + 1], b = d[i + 2];
-      yBuf[y * W + x] = cl(0.299 * r + 0.587 * g + 0.114 * b);
+      yBuf[y * W + x] = cl(limY(0.299 * r + 0.587 * g + 0.114 * b));
       const ci = (y >> 1) * (W >> 1) + (x >> 1);
       uAcc[ci] += -0.168736 * r - 0.331264 * g + 0.5 * b + 128;
       vAcc[ci] += 0.5 * r - 0.418688 * g - 0.081312 * b + 128;
@@ -83,8 +87,8 @@ async function generarCamaraFalsa() {
   const uBuf = Buffer.alloc(W * H / 4);
   const vBuf = Buffer.alloc(W * H / 4);
   for (let i = 0; i < uBuf.length; i++) {
-    uBuf[i] = cl(uAcc[i] / cnt[i]);
-    vBuf[i] = cl(vAcc[i] / cnt[i]);
+    uBuf[i] = cl(limC(uAcc[i] / cnt[i] - 128));
+    vBuf[i] = cl(limC(vAcc[i] / cnt[i] - 128));
   }
 
   const partes = [Buffer.from(`YUV4MPEG2 W${W} H${H} F15:1 Ip A1:1 C420jpeg\n`)];

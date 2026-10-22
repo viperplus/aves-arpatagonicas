@@ -55,7 +55,7 @@
       /* entidad intermedia: sigue al ancla con filtro anti-temblor */
       var suave = document.createElement("a-entity");
       suave.setAttribute("suavizar-ancla", "");
-      suave.appendChild(window.Aves3D.crearAve3D(ave));
+      suave.appendChild(window.Aves3D.crearAve3D(ave, true));
       ancla.appendChild(suave);
       escena.appendChild(ancla);
 

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <title>Preview · aves 3D</title>
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden;
+      background: #dfe8ee; font-family: system-ui, sans-serif; }
+    #etiquetas { position: fixed; inset: 0; z-index: 10; pointer-events: none;
+      display: grid; grid-template: repeat(3, 1fr) / repeat(3, 1fr); }
+    .et { display: flex; align-items: flex-end; justify-content: center;
+      padding-bottom: 8px; font: 700 17px system-ui; color: #16323f;
+      text-shadow: 0 1px 3px #ffffffcc; letter-spacing: .3px; }
+  </style>
+  <script src="../lib/aframe.min.js"></script>
+</head>
+<body>
+  <a-scene id="escena" renderer="antialias: true; colorManagement: true" embedded>
+    <a-sky color="#dfe8ee"></a-sky>
+    <a-assets></a-assets>
+
+    <a-entity light="type: ambient; color: #ffffff; intensity: 0.65"></a-entity>
+    <a-entity light="type: directional; color: #fff8ec; intensity: 0.95;
+      position: 1.5 3 2"></a-entity>
+    <a-entity light="type: directional; color: #cfe4f2; intensity: 0.35;
+      position: -2 -1 1.5"></a-entity>
+
+    <a-entity id="jaula"></a-entity>
+
+    <a-entity id="cam" camera="fov: 50; near: 0.05; far: 60"
+      position="0 0 5.8"></a-entity>
+  </a-scene>
+
+  <div id="etiquetas"></div>
+
+  <script src="../js/datos.js"></script>
+  <script src="../js/aves3d.js"></script>
+  <script>
+    (function () {
+      var m = /[?&]ave=([a-z]+)/i.exec(location.search);
+      var solo = m ? (AVES.find(function (a) { return a.id === m[1]; }) || null) : null;
+      var lista = solo ? [solo] : AVES;
+      var COLS = [-1.75, 0, 1.75], FILAS = [1.6, 0, -1.6];
+      var jaula = document.getElementById("jaula");
+      var ets = document.getElementById("etiquetas");
+      var cam = document.getElementById("cam");
+
+      if (solo) {
+        cam.setAttribute("position", "0 0 2.6");
+        document.querySelector("a-sky").setAttribute("color", "#eef3f6");
+      }
+
+      lista.forEach(function (ave, i) {
+        var x = solo ? 0 : COLS[i % 3];
+        var y;
+        if (solo) {
+          var h = ave.forma.cuello === "largo" && ave.id === "flamenco" ? 1.0
+            : ave.forma.cuello === "largo" ? 0.85
+            : ave.forma.cuello === "medio" ? 0.6 : 0.45;
+          y = -h * 0.5 + 0.05;
+        } else {
+          y = FILAS[Math.floor(i / 3)];
+        }
+
+        var celda = document.createElement("a-entity");
+        celda.setAttribute("position", x + " " + y + " 0");
+        /* tarjeta de fondo (papel) como en AR, para juzgar contraste */
+        celda.appendChild((function () {
+          var e = document.createElement("a-entity");
+          e.setAttribute("geometry", "primitive: plane; width: 1; height: 1.414");
+          e.setAttribute("material", "color: #f6f1e6; roughness: 1");
+          e.setAttribute("position", "0 0 -0.05");
+          return e;
+        })());
+        celda.appendChild(Aves3D.crearAve3D(ave));
+        jaula.appendChild(celda);
+
+        var d = document.createElement("div");
+        d.className = "et";
+        d.textContent = ave.nombre;
+        ets.appendChild(d);
+      });
+    })();
+  </script>
+</body>
+</html>

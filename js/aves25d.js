@@ -10,7 +10,8 @@
 (function (global) {
   "use strict";
 
-  var L = 0.56;              /* lado del plano = caja de la ilustración */
+  var L = 1.0;               /* lado del plano: el ave desborda la tarjeta
+                                 por arriba (efecto de "salir de la tarjeta") */
   var YCAJA = -0.15;         /* borde inferior de la caja impresa */
   var XC = 0;                /* centro óptico del ave en X (fotos centradas) */
 
@@ -36,9 +37,10 @@
     var raiz = ent({});
 
     if (conPanel) {
-      /* panel del color exacto de la tarjeta: tapa la ilustración impresa */
+      /* panel con el mismo tamaño exacto de la caja impresa: tapa la
+         ilustración y deja una "etapa vacía" de la que el ave emerge */
       raiz.appendChild(ent({
-        geometry: "primitive: plane; width: 0.64; height: 0.66",
+        geometry: "primitive: plane; width: 0.56; height: 0.56",
         material: "shader: flat; color: #f6efdf; side: front",
         position: "0 0.13 0.001"
       }));
@@ -46,7 +48,7 @@
 
     /* sombra de contacto (queda plana sobre la tarjeta, no gira con el ave) */
     raiz.appendChild(ent({
-      geometry: "primitive: circle; radius: 0.09",
+      geometry: "primitive: circle; radius: 0.15",
       material: "shader: flat; color: #000000; transparent: true; opacity: 0.16",
       position: "0.01 " + (yPies + 0.002) + " 0.03",
       scale: "1 0.42 1"
@@ -57,7 +59,7 @@
       position: XC + " " + yPies + " 0.05",
       "mirar-camara": ""
     });
-    var cuerpo = ent({ "corte-vivo": "" });
+    var cuerpo = ent({ "corte-vivo": "", "nitido": "" });
     cuerpo.appendChild(ent({
       geometry: "primitive: plane; width: " + L + "; height: " + L,
       material: "shader: flat; side: front; transparent: true; alphaTest: 0.03;" +
@@ -82,6 +84,8 @@
           var T = AFRAME.THREE;
           this.vPos = new T.Vector3();
           this.vCam = new T.Vector3();
+          this.vDir = new T.Vector3();
+          this.vCru = new T.Vector3();
           this.qMun = new T.Quaternion();
           this.qPad = new T.Quaternion();
           this.mat = new T.Matrix4();
@@ -92,12 +96,49 @@
           if (!cam) return;
           this.el.object3D.getWorldPosition(this.vPos);
           cam.getWorldPosition(this.vCam);
-          if (this.vPos.distanceToSquared(this.vCam) < 1e-8) return;
+          this.vDir.subVectors(this.vCam, this.vPos);
+          var d2 = this.vDir.lengthSq();
+          if (d2 < 1e-10) return;
+          /* degenerado: la cámara queda casi sobre el eje vertical del plano
+             (mirada cenital). lookAt con up paralelo da matriz basura y el
+             ave desaparece/danza: en ese caso conservamos la última pose. */
+          this.vCru.crossVectors(this.vDir, this.up);
+          if (this.vCru.lengthSq() < 0.0025 * d2) return;
           this.mat.lookAt(this.vCam, this.vPos, this.up);
           this.qMun.setFromRotationMatrix(this.mat);
           this.el.parentEl.object3D.getWorldQuaternion(this.qPad).invert();
           this.qMun.premultiply(this.qPad);
           this.el.object3D.quaternion.copy(this.qMun);
+        }
+      });
+    }
+    if (!AFRAME.components["nitido"]) {
+      /* foto nítida en movimiento:
+         - alphaTest 0: el corte de la foto tiene bordes suaves; con alphaTest
+           y mipmaps, los fragmentos suaves caían bajo el umbral y "se borraba"
+           parte del ave al cambiar el tamaño en pantalla.
+         - depthTest off: el plano de la tarjeta/panel nunca tapa el ave cuando
+           el billboard se inclina en los ángulos rasantes.
+         - anisotropía máxima: evita el desdibujo del plano visto de canto. */
+      AFRAME.registerComponent("nitido", {
+        init: function () {
+          var el = this.el;
+          var aplicar = function () {
+            var mesh = el.getObject3D("mesh");
+            if (!mesh || !mesh.material) return;
+            var m = mesh.material;
+            if (m.map) {
+              var rend = el.sceneEl && el.sceneEl.renderer;
+              m.map.anisotropy = rend ? rend.capabilities.getMaxAnisotropy() : 1;
+              m.map.needsUpdate = true;
+            }
+            m.alphaTest = 0;
+            m.depthTest = false;
+            m.needsUpdate = true;
+          };
+          el.addEventListener("object3dset", aplicar);
+          el.addEventListener("materialtextureloaded", aplicar);
+          aplicar();
         }
       });
     }

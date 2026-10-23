@@ -1,23 +1,24 @@
-/* Aves 2.5D: la ilustración impresa, recortada y animada sobre la tarjeta.
+/* Aves 2.5D: la foto real recortada y animada sobre la tarjeta.
    - panel crema que enmascara la ilustración impresa (solo en modo tarjeta)
-   - plano con el corte PNG (assets/ave-25d/<id>.png) que siempre mira al
-     espectador (billboard), con balanceo y salto suave + sombra de contacto.
-   Geometría: la ilustración vive en un viewBox de 400 px que la tarjeta
-   imprime a 0.56 unidades de ancho de tarjeta; los pies del ave quedan a
-   la misma altura que en la impresión (fracción MEDIDAS[id]). */
+   - plano con el corte PNG de la FOTO (assets/ave-25d/<id>.png, fondo
+     transparente) que siempre mira al espectador (billboard), con balanceo
+     y salto suave + sombra de contacto.
+   Los cortes se preparan con herramientas/preparar_fotos.py (rembg): el ave
+   queda centrada en un lienzo de 800 px con las patas en y = 720 (0.90),
+   así todas las especies se apoyan en la misma línea de la tarjeta. */
 
 (function (global) {
   "use strict";
 
   var L = 0.56;              /* lado del plano = caja de la ilustración */
   var YCAJA = -0.15;         /* borde inferior de la caja impresa */
-  var XC = -0.014;           /* centro óptico del ave en X */
+  var XC = 0;                /* centro óptico del ave en X (fotos centradas) */
 
-  /* fracción vertical de los pies en el viewBox (piesY/400) por especie */
+  /* fracción vertical de los pies en el lienzo de 800 px (piesY/800) */
   var MEDIDAS = {
-    chimango: 0.825, carancho: 0.90, tero: 0.90, martineta: 0.825,
-    choique: 0.87, cacholote: 0.825, loica: 0.825, aguila: 0.825,
-    flamenco: 0.87
+    chimango: 0.90, carancho: 0.90, tero: 0.90, martineta: 0.90,
+    choique: 0.90, cacholote: 0.90, loica: 0.90, aguila: 0.90,
+    flamenco: 0.90
   };
 
   function ent(attrs) {

@@ -130,11 +130,11 @@ a { color: var(--acento); }
   transition: transform .15s ease;
 }
 .ficha-card .btn-canto:hover { transform: scale(1.08); background: #fff; }
-.creditos-cantos { margin: 12px auto 0; width: fit-content; text-align: left; font-size: .85rem; }
-.creditos-cantos summary { cursor: pointer; font-weight: 700; }
-.creditos-cantos ul { margin: 8px 0 0 18px; }
-.creditos-cantos li { margin-bottom: 4px; }
-.creditos-cantos a { color: inherit; }
+.creditos { margin: 12px auto 0; width: fit-content; text-align: left; font-size: .85rem; }
+.creditos summary { cursor: pointer; font-weight: 700; }
+.creditos ul { margin: 8px 0 0 18px; }
+.creditos li { margin-bottom: 4px; }
+.creditos a { color: inherit; }
 .ficha-card .cuerpo { padding: 16px 18px 20px; }
 .ficha-card .grupo {
   display: inline-block;

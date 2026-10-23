@@ -20,12 +20,13 @@ aves-ar/
 ├── js/
 │   ├── datos.js        Fichas de las 9 especies (fuente única de verdad)
 │   ├── aves-svg.js     Ilustraciones SVG de cada ave
-│   ├── aves25d.js      Ave 2.5D: recorte animado + sombra (billboard)
+│   ├── aves25d.js      Ave 2.5D: foto recortada animada + sombra (billboard)
+│   ├── fotos.js        Créditos de las fotos (Wikimedia Commons)
 │   ├── sonidos.js      Manifiesto de los cantos (xeno-canto)
 │   ├── cantos.js       Reproductor del canto (con botón de silencio)
 │   ├── videos.js       Manifiesto de los videos de las fichas
 │   └── ar.js           Lógica del visor AR
-├── assets/ave-25d/*.png  Los 9 recortes animados (RGBA)
+├── assets/ave-25d/*.png  Los 9 recortes de fotos reales (RGBA, fondo transparente)
 ├── sonidos/*.mp3       Cantos de xeno-canto (uno por especie)
 ├── videos/*.mp4        Videos cortos en bucle para las fichas del index
 ├── tarjetas/*.png      Las 9 tarjetas listas para imprimir
@@ -109,10 +110,12 @@ node generar-tarjetas.mjs
 # 3. recompilar los marcadores .mind
 node compilar-mind.mjs
 
-# opcional: regenerar el resto de los recursos (los cantos necesitan internet)
-node generar-cortes.mjs     # recortes 2.5D desde las ilustraciones SVG
+# opcional: regenerar el resto de los recursos (los cantos/fotos necesitan internet)
+node generar-cortes.mjs     # (opcional) recortes desde el SVG, versión ilustración
 node generar-videos.mjs     # videos en bucle de las fichas del index
 node descargar-cantos.mjs   # cantos de xeno-canto.org (con navegador)
+node descargar-fotos.mjs    # candidatas de Wikimedia Commons (licencias libres)
+python preparar_fotos.py    # recorta el fondo de la foto elegida (IA rembg)
 ```
 
 Si cambiás el texto de una especie, editá **`js/datos.js`**, volvé a correr los
@@ -137,9 +140,12 @@ especies, **hay que recompilar siempre**, pasaría a otro índice).
   "marcador" (no hace falta imprimir códigos tipo QR). `mind/aves.mind` guarda
   las características de las 9 imágenes; al encontrar una, MindAR ubica un
   ancla en 3D encima.
-- **A-Frame** arma la escena; cada ave es un **recorte PNG** de la misma
-  ilustración impresa (`assets/ave-25d/`) sobre un plano que siempre mira al
-  espectador, con balanceo y saltito (`js/aves25d.js`) y sombra de contacto.
+- **A-Frame** arma la escena; cada ave es el recorte de una **foto real** de
+  Wikimedia Commons (`assets/ave-25d/`, fondo transparente, preparado con
+  `herramientas/preparar_fotos.py` usando IA de segmentación) sobre un plano
+  que siempre mira al espectador, con balanceo y saltito (`js/aves25d.js`) y
+  sombra de contacto. Los créditos de cada foto están en `js/fotos.js` y en
+  el pie del index (licencias libres CC0 / CC BY / CC BY-SA).
 - **El canto** de cada especie viene de **xeno-canto.org** (licencias
   Creative Commons, créditos en el pie del index), queda en `sonidos/` y
   suena con la ficha (`js/cantos.js`).

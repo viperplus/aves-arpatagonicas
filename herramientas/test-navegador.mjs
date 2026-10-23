@@ -171,6 +171,16 @@ async function main() {
     `los 9 cantos disponibles (${cantos.ok}/${cantos.n} responden)`);
   const botones = await page.$$eval(".btn-canto", e => e.length);
   check(botones === 9, `las 9 fichas tienen boton de canto (${botones})`);
+  const fotos = await page.evaluate(async () => {
+    const ids = Object.keys(window.FOTOS || {});
+    const ok = await Promise.all(ids.map(id =>
+      fetch("assets/ave-25d/" + id + ".png").then(r => r.ok).catch(() => false)));
+    return { n: ids.length, ok: ok.filter(Boolean).length };
+  });
+  check(fotos.n === 9 && fotos.ok === 9,
+    `las 9 fotos reales con credito responden (${fotos.ok}/${fotos.n})`);
+  const creditos = await page.$$eval(".creditos", e => e.length);
+  check(creditos === 2, `el pie lista fotos y cantos con credito (${creditos} listas)`);
   check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
   await page.screenshot({ path: path.join(tmp, "01-index.png"), fullPage: true });
 

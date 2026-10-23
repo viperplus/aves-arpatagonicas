@@ -123,6 +123,14 @@ pasos 2 y 3, y listo. El orden de las especies en `datos.js` es el que define
 el índice de cada tarjeta dentro de `aves.mind` (si agregás o reordenás
 especies, **hay que recompilar siempre**, pasaría a otro índice).
 
+> **Parche de MindAR:** `lib/mindar-image-aframe.prod.js` está parcheado con
+> `herramientas/parchear-mindar.mjs` (idempotente). El match original tomaba
+> el *primer* target que cruzaba el umbral, en orden 0,1,2…; como las tarjetas
+> comparten marco/puntos/textos, cualquier especie podía cruzar contra
+> chimango y mostraba el ave equivocada. El parche evalúa los 9 targets y
+> elige el que más matches tiene. Si actualizás el bundle de MindAR,
+> volvé a correr ese script.
+
 ---
 
 ## Consejos de impresión

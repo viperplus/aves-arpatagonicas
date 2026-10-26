@@ -1,7 +1,7 @@
 /* Genera un video corto en bucle (6 s) de cada ave 2.5D para las fichas del index.
    Graba desde herramientas/video-ave.html con MediaRecorder (canvas.captureStream).
    Salida: videos/<id>.mp4|webm  +  js/videos.js (window.VIDEOS = {id: [archivo]})
-   Uso:  node generar-videos.mjs                 -> las 9 especies
+   Uso:  node generar-videos.mjs                 -> todas las especies
          node generar-videos.mjs chimango loica  -> solo esas                 */
 
 const solo = process.argv.slice(2);

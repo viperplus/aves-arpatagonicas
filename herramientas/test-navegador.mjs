@@ -10,6 +10,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 import puppeteer from "puppeteer-core";
 import { createCanvas, loadImage } from "canvas";
 
@@ -17,6 +18,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const raiz = path.resolve(__dirname, "..");
 const tmp = path.join(__dirname, "tmp_test");
 fs.mkdirSync(tmp, { recursive: true });
+
+/* cantidad de especies = la lista de datos.js (fuente única) */
+const requireCJS = createRequire(import.meta.url);
+globalThis.window = globalThis;
+requireCJS(path.join(raiz, "js", "datos.js"));
+const N = globalThis.window.AVES.length;
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -152,33 +159,33 @@ async function main() {
   let errs = capturar(page);
   await page.goto(base + "/index.html", { waitUntil: "networkidle0", timeout: 40000 });
   const fichas = await page.$$eval(".ficha-card", e => e.length);
-  check(fichas === 9, `se renderizan las 9 fichas (${fichas})`);
+  check(fichas === N, `se renderizan las ${N} fichas (${fichas})`);
   const vids = await page.$$eval(".arte-video", e => e.length);
-  check(vids === 9, `las 9 fichas tienen video (${vids})`);
-  await page.waitForFunction(() => {
+  check(vids === N, `las ${N} fichas tienen video (${vids})`);
+  await page.waitForFunction((n) => {
     const vs = document.querySelectorAll(".arte-video");
-    return vs.length === 9 && [...vs].every(v => v.classList.contains("listo"));
-  }, { timeout: 20000 }).catch(() => {});
+    return vs.length === n && [...vs].every(v => v.classList.contains("listo"));
+  }, { timeout: 20000 }, N).catch(() => {});
   const listos = await page.$$eval(".arte-video", e => e.filter(v => v.classList.contains("listo")).length);
-  check(listos === 9, `los 9 videos cargan y reproducen (${listos})`);
+  check(listos === N, `los ${N} videos cargan y reproducen (${listos})`);
   const cantos = await page.evaluate(async () => {
     const ids = Object.keys(window.CANTOS || {});
     const ok = await Promise.all(ids.map(id =>
       fetch("sonidos/" + window.CANTOS[id].archivo).then(r => r.ok).catch(() => false)));
     return { n: ids.length, ok: ok.filter(Boolean).length };
   });
-  check(cantos.n === 9 && cantos.ok === 9,
-    `los 9 cantos disponibles (${cantos.ok}/${cantos.n} responden)`);
+  check(cantos.n === N && cantos.ok === N,
+    `los ${N} cantos disponibles (${cantos.ok}/${cantos.n} responden)`);
   const botones = await page.$$eval(".btn-canto", e => e.length);
-  check(botones === 9, `las 9 fichas tienen boton de canto (${botones})`);
+  check(botones === N, `las ${N} fichas tienen boton de canto (${botones})`);
   const fotos = await page.evaluate(async () => {
     const ids = Object.keys(window.FOTOS || {});
     const ok = await Promise.all(ids.map(id =>
       fetch("assets/ave-25d/" + id + ".png").then(r => r.ok).catch(() => false)));
     return { n: ids.length, ok: ok.filter(Boolean).length };
   });
-  check(fotos.n === 9 && fotos.ok === 9,
-    `las 9 fotos reales con credito responden (${fotos.ok}/${fotos.n})`);
+  check(fotos.n === N && fotos.ok === N,
+    `las ${N} fotos reales con credito responden (${fotos.ok}/${fotos.n})`);
   const creditos = await page.$$eval(".creditos", e => e.length);
   check(creditos === 2, `el pie lista fotos y cantos con credito (${creditos} listas)`);
   check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
@@ -188,13 +195,13 @@ async function main() {
   console.log("\n[2] tarjetas.html");
   errs = capturar(page);
   await page.goto(base + "/tarjetas.html", { waitUntil: "networkidle0", timeout: 40000 });
-  await page.waitForFunction(() => {
+  await page.waitForFunction((n) => {
     const im = document.querySelectorAll(".tarjeta-impresion img");
-    return im.length === 9 && [...im].every(i => i.complete && i.naturalWidth > 0);
-  }, { timeout: 20000 }).catch(() => {});
+    return im.length === n && [...im].every(i => i.complete && i.naturalWidth > 0);
+  }, { timeout: 20000 }, N).catch(() => {});
   const imgs = await page.$$eval(".tarjeta-impresion img",
     els => els.filter(e => e.complete && e.naturalWidth > 0).length);
-  check(imgs === 9, `las 9 tarjetas PNG cargan (${imgs})`);
+  check(imgs === N, `las ${N} tarjetas PNG cargan (${imgs})`);
   check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
   await page.close();
 
@@ -224,7 +231,7 @@ async function main() {
   await page.screenshot({ path: path.join(tmp, "02-demo.png") });
 
   const chips = await page.$$("#demo-chips .chip");
-  check(chips.length === 9, `hay 9 chips para cambiar de especie (${chips.length})`);
+  check(chips.length === N, `hay ${N} chips para cambiar de especie (${chips.length})`);
   if (chips[3]) {
     await chips[3].click();
     const n2 = await page.$eval("#ficha-nombre", e => e.textContent.trim());

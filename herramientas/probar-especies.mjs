@@ -1,5 +1,5 @@
 /* Caza el "cuadrado rosa o naranja": captura el AR con las especies de
-   colores (flamenco, loica) + demo de todas + estado sin deteccion, y
+   colores (hornero, loica) + demo de todas + estado sin deteccion, y
    escanea cada captura por cúmulos rosa/naranja saturados.
    Uso: node probar-especies.mjs */
 import http from "http";
@@ -114,7 +114,7 @@ async function main() {
   const puerto = 8812;
   await new Promise(r => servidor.listen(puerto, "127.0.0.1", r));
   const base = `http://localhost:${puerto}`;
-  const y4m = await camaraFalsa("flamenco");
+  const y4m = await camaraFalsa("hornero");
   const browser = await puppeteer.launch({
     executablePath: buscarEdge(), headless: true,
     args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream",
@@ -153,15 +153,15 @@ async function main() {
   await page.screenshot({ path: ruta });
   await escanear(ruta);
 
-  /* --- 3. detección de FLAMENCO (rosa) --- */
-  console.log("[3] cámara · detección de flamenco");
+  /* --- 3. detección de HORNERO (rojizo) --- */
+  console.log("[3] cámara · detección de hornero");
   const detectado = await page.waitForFunction(() => {
     const f = document.getElementById("ficha");
     return f && !f.classList.contains("oculto") && document.getElementById("ficha-nombre").textContent.trim();
   }, { timeout: 60000 }).then(h => h.jsonValue()).catch(() => null);
   console.log("   detectado:", detectado || "NADA");
   await new Promise(r => setTimeout(r, 600));
-  ruta = path.join(tmp, "d-deteccion-flamenco.png");
+  ruta = path.join(tmp, "d-deteccion-hornero.png");
   await page.screenshot({ path: ruta });
   const h3 = await escanear(ruta);
 

@@ -13,12 +13,12 @@ y se publica gratis en **GitHub Pages**.
 
 ```
 aves-ar/
-├── index.html          Portada · guía de campo con las 9 fichas
+├── index.html          Portada · guía de campo con las 22 fichas
 ├── ar.html             Visor de realidad aumentada (cámara + tarjeta + ave 2.5D)
-├── tarjetas.html       Hoja para imprimir las 9 tarjetas
+├── tarjetas.html       Hoja para imprimir las 22 tarjetas
 ├── css/aves.css
 ├── js/
-│   ├── datos.js        Fichas de las 9 especies (fuente única de verdad)
+│   ├── datos.js        Fichas de las 22 especies (fuente única de verdad)
 │   ├── aves-svg.js     Ilustraciones SVG de cada ave
 │   ├── aves25d.js      Ave 2.5D: foto recortada animada + sombra (billboard)
 │   ├── fotos.js        Créditos de las fotos (Wikimedia Commons)
@@ -26,10 +26,10 @@ aves-ar/
 │   ├── cantos.js       Reproductor del canto (con botón de silencio)
 │   ├── videos.js       Manifiesto de los videos de las fichas
 │   └── ar.js           Lógica del visor AR
-├── assets/ave-25d/*.png  Los 9 recortes de fotos reales (RGBA, fondo transparente)
+├── assets/ave-25d/*.png  Los 22 recortes de fotos reales (RGBA, fondo transparente)
 ├── sonidos/*.mp3       Cantos de xeno-canto (uno por especie)
 ├── videos/*.mp4        Videos cortos en bucle para las fichas del index
-├── tarjetas/*.png      Las 9 tarjetas listas para imprimir
+├── tarjetas/*.png      Las 22 tarjetas listas para imprimir
 ├── mind/aves.mind      Marcadores compilados (reconocimiento de imagen)
 ├── lib/                A-Frame + MindAR vendorizados (anda sin internet)
 ├── herramientas/       Scripts para regenerar tarjetas y marcadores
@@ -37,8 +37,11 @@ aves-ar/
 └── .nojekyll           Para que GitHub Pages sirva los archivos tal cual
 ```
 
-Las 9 especies: **chimango, carancho, tero, martineta, choique (ñandú petiso),
-cacholote, loica, águila mora y flamenco austral**.
+Las 22 especies: **chingolo, calandria grande, hornero, tero, loro barranquero,
+golondrina tijerita, jilguero dorado, naranjero, benteveo, paloma picazuro,
+gorrión, ratona, zorzal patagónico, tordo renegrido, chimango, cotorra,
+paloma manchada, loica, golondrina parda, cabezanegra, golondrina patagónica y
+torcaza**.
 
 ---
 
@@ -127,7 +130,7 @@ especies, **hay que recompilar siempre**, pasaría a otro índice).
 > `herramientas/parchear-mindar.mjs` (idempotente). El match original tomaba
 > el *primer* target que cruzaba el umbral, en orden 0,1,2…; como las tarjetas
 > comparten marco/puntos/textos, cualquier especie podía cruzar contra
-> chimango y mostraba el ave equivocada. El parche evalúa los 9 targets y
+> chimango y mostraba el ave equivocada. El parche evalúa todos los targets y
 > elige el que más matches tiene. Si actualizás el bundle de MindAR,
 > volvé a correr ese script.
 
@@ -146,7 +149,7 @@ especies, **hay que recompilar siempre**, pasaría a otro índice).
 
 - **Reconocimiento de imagen con MindAR**: el diseño de cada tarjeta es el
   "marcador" (no hace falta imprimir códigos tipo QR). `mind/aves.mind` guarda
-  las características de las 9 imágenes; al encontrar una, MindAR ubica un
+  las características de las 22 imágenes; al encontrar una, MindAR ubica un
   ancla en 3D encima.
 - **A-Frame** arma la escena; cada ave es el recorte de una **foto real** de
   Wikimedia Commons (`assets/ave-25d/`, fondo transparente, preparado con

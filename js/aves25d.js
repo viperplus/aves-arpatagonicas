@@ -15,12 +15,10 @@
   var YCAJA = -0.15;         /* borde inferior de la caja impresa */
   var XC = 0;                /* centro óptico del ave en X (fotos centradas) */
 
-  /* fracción vertical de los pies en el lienzo de 800 px (piesY/800) */
-  var MEDIDAS = {
-    chimango: 0.90, carancho: 0.90, tero: 0.90, martineta: 0.90,
-    choique: 0.90, cacholote: 0.90, loica: 0.90, aguila: 0.90,
-    flamenco: 0.90
-  };
+  /* fracción vertical de los pies en el lienzo de 800 px (piesY/800).
+     preparar_fotos.py fija los pies de TODAS las especies en 0.90; el
+     mapa queda solo para ajustes puntuales por especie. */
+  var MEDIDAS = {};
 
   function ent(attrs) {
     var e = document.createElement("a-entity");
@@ -31,7 +29,7 @@
   }
 
   function crearAve25D(ave, conPanel) {
-    var fy = MEDIDAS[ave.id] || 0.84;
+    var fy = MEDIDAS[ave.id] || 0.90;
     var yPies = YCAJA + (1 - fy) * L;      /* altura de los pies sobre la tarjeta */
 
     var raiz = ent({});

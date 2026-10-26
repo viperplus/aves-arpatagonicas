@@ -5,6 +5,7 @@ import fs from "fs";
 import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
+import { createRequire } from "module";
 import puppeteer from "puppeteer-core";
 import { createCanvas, loadImage } from "canvas";
 
@@ -74,8 +75,12 @@ function buscarEdge() {
           "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"].find(p => fs.existsSync(p));
 }
 
-const especies = ["chimango", "carancho", "tero", "martineta", "choique",
-                  "cacholote", "loica", "aguila", "flamenco"];
+const requireCJS = createRequire(import.meta.url);
+globalThis.window = globalThis;
+requireCJS(path.join(raiz, "js", "datos.js"));
+const AVES = globalThis.window.AVES;
+
+const especies = AVES.map(a => a.id);
 const resumen = {};
 
 async function main() {
@@ -105,7 +110,7 @@ async function main() {
         return f && !f.classList.contains("oculto") && document.getElementById("ficha-nombre").textContent.trim();
       }, { timeout: 40000 }).then(h => h.jsonValue()).catch(() => null);
       (resumen[esp] = resumen[esp] || []).push(det || "SIN DETECCION");
-      console.log(`  r${r} ${esp.padEnd(9)} -> ${det || "SIN DETECCION"}`);
+      console.log(`  r${r} ${esp.padEnd(22)} -> ${det || "SIN DETECCION"}`);
       await browser.close();
       await new Promise(r2 => setTimeout(r2, 400));
     }
@@ -114,8 +119,8 @@ async function main() {
   console.log("\nRESUMEN (esperado = nombre de la especie):");
   for (const esp of especies) {
     const lista = resumen[esp];
-    const ok = lista.filter(x => x === esp[0].toUpperCase() + esp.slice(1) ||
-      x === "Flamenco austral" && esp === "flamenco").length;
+    const esperado = AVES.find(a => a.id === esp).nombre;
+    const ok = lista.filter(x => x === esperado).length;
     console.log(`  ${esp}: ${ok}/${repeticiones} correctas -> [${lista.join(", ")}]`);
   }
 

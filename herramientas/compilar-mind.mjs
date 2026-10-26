@@ -1,4 +1,4 @@
-/* Compila las 9 tarjetas (PNG) en mind/aves.mind usando el compilador offline de MindAR.
+/* Compila las tarjetas (PNG) en mind/aves.mind usando el compilador offline de MindAR.
    Uso: node herramientas/compilar-mind.mjs
    Si cambiás el diseño de alguna tarjeta, volvé a correr esto. */
 

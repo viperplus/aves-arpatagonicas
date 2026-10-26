@@ -1,8 +1,8 @@
 /* Descarga fotos reales de Wikimedia Commons como candidatas de cada especie.
    Filtra por licencia libre (CC0 / CC BY / CC BY-SA / dominio público).
    Salida: herramientas/tmp_test/fotos/<id>/c1.jpg... + candidatas.json
-   Uso:  node descargar-fotos.mjs                 -> las 9 especies
-         node descargar-fotos.mjs loica flamenco  -> solo esas                */
+   Uso:  node descargar-fotos.mjs                 -> todas las especies
+         node descargar-fotos.mjs loica hornero   -> solo esas                */
 
 const solo = process.argv.slice(2);
 
@@ -25,6 +25,9 @@ const AVES = cargar("js/datos.js").AVES;
 
 const UA = { "User-Agent": "aves-arpatagonicas/1.0 (proyecto educativo)" };
 const dormir = ms => new Promise(r => setTimeout(r, ms));
+
+/* nombre de búsqueda alternativo en Commons (taxonomías que cambiaron) */
+const ALIAS_FOTOS = { naranjero: "Thraupis bonariensis" };
 
 function limpiarHTML(s) {
   return String(s || "")

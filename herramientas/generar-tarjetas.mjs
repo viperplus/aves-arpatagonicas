@@ -197,4 +197,4 @@ for (const ave of AVES) {
   console.log("OK", ave.id);
 }
 
-console.log("Listo: 9 tarjetas en /tarjetas");
+console.log(`Listo: ${AVES.length} tarjetas en /tarjetas`);

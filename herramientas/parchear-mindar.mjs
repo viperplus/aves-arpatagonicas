@@ -1,7 +1,7 @@
 /* Parcha el worker del tracker de MindAR (lib/mindar-image-aframe.prod.js).
    Bug original: en "match" el worker tomaba el PRIMER target cuyo
    matchDetection cruzaba el umbral (orden 0,1,2...) y hacía `break`.
-   Como las 9 tarjetas comparten marco/puntos/textos, cualquier tarjeta
+   Como las tarjetas comparten marco/puntos/textos, cualquier tarjeta
    cruzaba contra chimango (índice 0) y se mostraba la especie equivocada.
    Parche: matchDetection devuelve matchesCount y el loop elige el target
    con MÁS matches (evalúa todos).

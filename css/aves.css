@@ -105,6 +105,7 @@ a { color: var(--acento); }
   position: relative;
 }
 .ficha-card .arte svg { display: block; width: 100%; height: auto; }
+.ficha-card .arte .arte-foto { display: block; width: 100%; height: auto; }
 .ficha-card .arte-video {
   position: absolute;
   left: 0; top: 0;

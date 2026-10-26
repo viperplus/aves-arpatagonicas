@@ -20,6 +20,46 @@
      mapa queda solo para ajustes puntuales por especie. */
   var MEDIDAS = {};
 
+  /* Pinta la trama de la caja impresa sobre el panel para que quede
+     invisible sobre la tarjeta (mismo papel + decoración + banda de piso,
+     sin el dibujo). Se rasteriza desde el SVG compartido (aves-svg.js). */
+  function pintarFondoPanel(panel, ave) {
+    if (typeof AvesSVG === "undefined" || !AvesSVG.fondoSVG) return;
+    var SVG_NS = "http://www.w3.org/2000/svg";
+    try {
+      var svg = '<svg xmlns="' + SVG_NS + '" width="560" height="560" viewBox="0 0 400 400">' +
+        AvesSVG.fondoSVG(ave, { colorFondo: "#f6efdf" }) + "</svg>";
+      var uri = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svg);
+      var img = new Image();
+      img.onload = function () {
+        var cv = document.createElement("canvas");
+        var cv = document.createElement("canvas");
+        cv.width = 560; cv.height = 560;
+        var c = cv.getContext("2d");
+        c.drawImage(img, 0, 0, 560, 560);
+        var aplicar = function () {
+          var mesh = panel.getObject3D("mesh");
+          if (!mesh || !mesh.material) return false;
+          var T = (typeof AFRAME !== "undefined") ? AFRAME.THREE : null;
+          if (!T) return false;
+          var tex = new T.CanvasTexture(cv);
+          if ("colorSpace" in tex && T.SRGBColorSpace) tex.colorSpace = T.SRGBColorSpace;
+          else if (T.sRGBEncoding) tex.encoding = T.sRGBEncoding;
+          var rend = (typeof AFRAME !== "undefined" && panel.sceneEl) ? panel.sceneEl.renderer : null;
+          tex.anisotropy = rend ? rend.capabilities.getMaxAnisotropy() : 1;
+          mesh.material.map = tex;
+          mesh.material.color.set(0xffffff);
+          mesh.material.needsUpdate = true;
+          return true;
+        };
+        if (!aplicar()) panel.addEventListener("object3dset", aplicar);
+      };
+      img.src = uri;
+    } catch (e) {
+      /* queda el panel crema sólido */
+    }
+  }
+
   function ent(attrs) {
     var e = document.createElement("a-entity");
     for (var k in attrs) {
@@ -35,13 +75,18 @@
     var raiz = ent({});
 
     if (conPanel) {
-      /* panel con el mismo tamaño exacto de la caja impresa: tapa la
-         ilustración y deja una "etapa vacía" de la que el ave emerge */
-      raiz.appendChild(ent({
-        geometry: "primitive: plane; width: 0.56; height: 0.56",
-        material: "shader: flat; color: #f6efdf; side: front",
-        position: "0 0.13 0.001"
-      }));
+      /* panel con el fondo EXACTO de la caja impresa (papel + decoración +
+         banda de piso, sin el dibujo): enmascara la ilustración impresa y
+         queda invisible sobre la tarjeta. Alineado a la caja impresa real
+         (x 220..780, y 285..845 px de la tarjeta de 1000x1414 → centro
+         y +0.142, lado 0.56). */
+      var panel = ent({
+        geometry: "primitive: plane; width: 0.575; height: 0.575",
+        material: "shader: flat; side: front; color: #f6efdf",
+        position: "0 0.142 0.001"
+      });
+      pintarFondoPanel(panel, ave);
+      raiz.appendChild(panel);
     }
 
     /* sombra de contacto (queda plana sobre la tarjeta, no gira con el ave) */

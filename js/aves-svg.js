@@ -232,13 +232,13 @@
     return partes.join("");
   }
 
-  /* SVG completo con fondo (para tarjetas y portada). */
-  function aveSVG(ave, opts) {
+  /* Fondo de la caja de la ilustración (papel + decoración + banda de piso).
+     Es la misma trama que lleva la tarjeta impresa: el panel de la RA la
+     reproduce para quedar invisible sobre la tarjeta. */
+  function fondoSVG(ave, opts) {
     opts = opts || {};
-    var w = opts.width || 400;
-    var h = opts.height || 400;
-    var fondo = opts.fondo === false ? "" :
-      '<rect width="400" height="400" fill="' + (opts.colorFondo || "#f3ead8") + '"/>' +
+    if (opts.fondo === false) return "";
+    return '<rect width="400" height="400" fill="' + (opts.colorFondo || "#f3ead8") + '"/>' +
       (opts.textura === false ? "" :
         '<g opacity="0.16" fill="' + (ave.color || "#5a4526") + '">' +
         '<circle cx="40" cy="40" r="2.2"/><circle cx="90" cy="28" r="1.6"/><circle cx="150" cy="46" r="2"/><circle cx="220" cy="30" r="1.7"/><circle cx="300" cy="44" r="2.1"/><circle cx="360" cy="26" r="1.6"/>' +
@@ -247,6 +247,14 @@
         "</g>") +
       (opts.horizonte === false ? "" :
         '<path d="M0 352 Q 100 342, 200 350 T 400 348 L 400 400 L 0 400 Z" fill="' + (ave.color || "#5a4526") + '" opacity="0.18"/>');
+  }
+
+  /* SVG completo con fondo (para tarjetas y portada). */
+  function aveSVG(ave, opts) {
+    opts = opts || {};
+    var w = opts.width || 400;
+    var h = opts.height || 400;
+    var fondo = fondoSVG(ave, opts);
 
     return (
       '<svg xmlns="' + NS + '" viewBox="0 0 400 400" width="' + w + '" height="' + h + '" role="img" aria-label="Ilustración de ' + esc(ave.nombre) + '">' +
@@ -256,7 +264,7 @@
     );
   }
 
-  var API = { aveSVG: aveSVG, dibujarAve: dibujarAve };
+  var API = { aveSVG: aveSVG, dibujarAve: dibujarAve, fondoSVG: fondoSVG };
 
   if (typeof module !== "undefined" && module.exports) {
     module.exports = API;

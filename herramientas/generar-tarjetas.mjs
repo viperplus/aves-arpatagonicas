@@ -23,10 +23,7 @@ const ANCHO = 1000;   /* px de la tarjeta */
 const ALTO = 1414;    /* proporción A4 */
 
 function htmlTarjeta(ave) {
-  const fotoBuf = readFileSync(join(raiz, "assets", "ave-25d", `${ave.id}.png`));
-  const foto = `data:image/png;base64,${fotoBuf.toString("base64")}`;
-  const NS = "http://www.w3.org/2000/svg";
-  const fondo = `<svg xmlns="${NS}" viewBox="0 0 400 400" width="560" height="560">${fondoSVG(ave, { colorFondo: "#f6efdf" })}</svg>`;
+  const svg = aveSVG(ave, { width: 560, height: 560, colorFondo: "#f6efdf" });
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -95,12 +92,6 @@ function htmlTarjeta(ave) {
     position:relative;
     text-align:center;
     margin-top: 8px;
-    width: 560px; height: 560px; margin-left: auto; margin-right: auto;
-  }
-  .ilustracion svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
-  .ilustracion .foto-ave {
-    position: relative; width: 100%; height: 100%;
-    object-fit: contain; display: block; z-index: 1;
   }
   .ficha {
     position:relative;
@@ -154,13 +145,16 @@ function htmlTarjeta(ave) {
     <div class="cientifico">${ave.cientifico}</div>
   </div>
 
-  <div class="ilustracion">${fondo}<img class="foto-ave" src="${foto}" alt="${ave.nombre}"></div>
+  <div class="ilustracion">${svg}</div>
 
   <div class="ficha">
     <div class="fila"><div class="etiqueta">Tamaño</div><div class="valor">${ave.tamano}</div></div>
     <div class="fila"><div class="etiqueta">Alimentación</div><div class="valor">${ave.alimento}</div></div>
     <div class="fila"><div class="etiqueta">Hábitat</div><div class="valor">${ave.habitat}</div></div>
     <div class="fila"><div class="etiqueta">Dónde verla</div><div class="valor">${ave.donde}</div></div>
+    <div class="fila"><div class="etiqueta">Estado</div><div class="valor">${ave.estado || "Preocupación menor (LC)"}</div></div>
+    <div class="fila"><div class="etiqueta">Época</div><div class="valor">${ave.epoca || "Residente."}</div></div>
+    <div class="fila"><div class="etiqueta">Distribución</div><div class="valor">${ave.distribucion || "Argentina."}</div></div>
   </div>
 
   <div class="dato">

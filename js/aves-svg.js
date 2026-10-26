@@ -155,31 +155,48 @@
     return "";
   }
 
-  /* Ilustración completa de una ave. */
+  /* Ilustración completa de un ave, estilo naturalista (más detalle,
+     volumen y plumas). */
   function dibujarAve(ave, opts) {
     opts = opts || {};
     var p = ave.paleta;
     var f = ave.forma;
     var partes = [];
 
-    /* suelo / sombra */
+    /* sombra de contacto (suave, radial) */
     if (opts.sombra !== false) {
-      partes.push('<ellipse cx="190" cy="358" rx="110" ry="12" fill="#000" opacity="0.10"/>');
+      partes.push(
+        '<defs>' +
+        '<radialGradient id="sombraGrad" cx="50%" cy="50%" r="50%">' +
+        '<stop offset="0%" stop-color="#000" stop-opacity="0.22"/>' +
+        '<stop offset="100%" stop-color="#000" stop-opacity="0"/>' +
+        '</radialGradient>' +
+        '<radialGradient id="cuerpoGrad" cx="35%" cy="30%" r="70%">' +
+        '<stop offset="0%" stop-color="' + p.detalle + '" stop-opacity="0.55"/>' +
+        '<stop offset="100%" stop-color="' + p.cuerpo + '" stop-opacity="1"/>' +
+        '</radialGradient>' +
+        '<radialGradient id="cabezaGrad" cx="30%" cy="25%" r="75%">' +
+        '<stop offset="0%" stop-color="' + p.detalle + '" stop-opacity="0.6"/>' +
+        '<stop offset="100%" stop-color="' + p.cabeza + '" stop-opacity="1"/>' +
+        '</radialGradient>' +
+        '</defs>' +
+        '<ellipse cx="190" cy="360" rx="118" ry="16" fill="url(#sombraGrad)"/>'
+      );
     }
 
-    /* patas */
-    var largoPata = f.patas === "largas" ? 92 : f.patas === "medianas" ? 62 : 48;
-    var yPata = f.cuello === "largo" ? 250 : 262;
+    /* patas (con dedos) */
+    var largoPata = f.patas === "largas" ? 96 : f.patas === "medianas" ? 66 : 50;
+    var yPata = f.cuello === "largo" ? 252 : 264;
     partes.push(
-      '<g stroke-linecap="round">' +
-      '<path d="M168 ' + yPata + ' L 160 ' + (yPata + largoPata - 16) + ' L 152 ' + (yPata + largoPata) + '" fill="none" stroke="' + p.patas + '" stroke-width="7"/>' +
-      '<path d="M208 ' + (yPata + 4) + ' L 204 ' + (yPata + largoPata - 18) + ' L 212 ' + (yPata + largoPata) + '" fill="none" stroke="' + p.patas + '" stroke-width="7"/>' +
-      '<path d="M152 ' + (yPata + largoPata) + ' L 134 ' + (yPata + largoPata + 3) + ' M152 ' + (yPata + largoPata) + ' L 164 ' + (yPata + largoPata + 4) + '" stroke="' + p.patas + '" stroke-width="5"/>' +
-      '<path d="M212 ' + (yPata + largoPata) + ' L 196 ' + (yPata + largoPata + 3) + ' M212 ' + (yPata + largoPata) + ' L 226 ' + (yPata + largoPata + 4) + '" stroke="' + p.patas + '" stroke-width="5"/>' +
-      "</g>"
+      '<g stroke-linecap="round" stroke-linejoin="round">' +
+      '<path d="M166 ' + yPata + ' L 158 ' + (yPata + largoPata - 20) + ' L 150 ' + (yPata + largoPata) + '" fill="none" stroke="' + p.patas + '" stroke-width="6"/>' +
+      '<path d="M150 ' + (yPata + largoPata) + ' L 130 ' + (yPata + largoPata + 4) + ' M 150 ' + (yPata + largoPata) + ' L 144 ' + (yPata + largoPata + 7) + ' M 150 ' + (yPata + largoPata) + ' L 162 ' + (yPata + largoPata + 5) + '" fill="none" stroke="' + p.patas + '" stroke-width="4"/>' +
+      '<path d="M210 ' + (yPata + 4) + ' L 206 ' + (yPata + largoPata - 22) + ' L 214 ' + (yPata + largoPata) + '" fill="none" stroke="' + p.patas + '" stroke-width="6"/>' +
+      '<path d="M214 ' + (yPata + largoPata) + ' L 196 ' + (yPata + largoPata + 4) + ' M 214 ' + (yPata + largoPata) + ' L 210 ' + (yPata + largoPata + 7) + ' M 214 ' + (yPata + largoPata) + ' L 228 ' + (yPata + largoPata + 5) + '" fill="none" stroke="' + p.patas + '" stroke-width="4"/>' +
+      '</g>'
     );
 
-    /* cola (detrás del cuerpo) */
+    /* cola (detrás del cuerpo) con plumas */
     partes.push(cola(f.cola, p));
 
     /* cuello largo */
@@ -187,13 +204,26 @@
     if (f.cuello === "medio") partes.push(cuelloMedio(p));
 
     /* cuerpo */
+    var cx = 190, cy = 216;
     if (f.cuello === "largo") {
-      partes.push('<ellipse cx="190" cy="212" rx="82" ry="56" transform="rotate(-6 190 212)" fill="' + p.cuerpo + '"/>');
-      partes.push('<path d="M150 232 C 170 258, 214 264, 246 248" fill="none" stroke="' + p.barriga + '" stroke-width="16" stroke-linecap="round" opacity="0.85"/>');
+      partes.push('<ellipse cx="192" cy="214" rx="84" ry="58" transform="rotate(-6 192 214)" fill="url(#cuerpoGrad)"/>');
+      partes.push('<path d="M152 236 C 172 262, 216 268, 248 250" fill="none" stroke="' + p.barriga + '" stroke-width="16" stroke-linecap="round" opacity="0.85"/>');
     } else {
-      partes.push('<ellipse cx="190" cy="216" rx="86" ry="60" transform="rotate(-8 190 216)" fill="' + p.cuerpo + '"/>');
-      partes.push('<path d="M148 240 C 168 266, 216 272, 250 252" fill="none" stroke="' + p.barriga + '" stroke-width="18" stroke-linecap="round" opacity="0.9"/>');
+      partes.push('<ellipse cx="190" cy="216" rx="88" ry="62" transform="rotate(-8 190 216)" fill="url(#cuerpoGrad)"/>');
+      partes.push('<path d="M148 242 C 168 268, 218 274, 252 254" fill="none" stroke="' + p.barriga + '" stroke-width="18" stroke-linecap="round" opacity="0.9"/>');
     }
+    /* brillo lateral */
+    partes.push('<ellipse cx="160" cy="196" rx="26" ry="16" transform="rotate(-20 160 196)" fill="' + p.detalle + '" opacity="0.18"/>');
+
+    /* alas plegadas con plumas (hachado) */
+    partes.push(
+      '<ellipse cx="194" cy="214" rx="60" ry="38" transform="rotate(-16 194 214)" fill="' + p.ala + '"/>'
+    );
+    for (var i = 0; i < 6; i++) {
+      var x0 = 148 + i * 12;
+      partes.push('<path d="M' + x0 + ' ' + (210 + i * 2) + ' C ' + (x0 + 20) + ' ' + (200 + i * 2) + ', ' + (x0 + 46) + ' ' + (196 + i * 2) + ', ' + (x0 + 70) + ' ' + (206 + i * 2) + '" fill="none" stroke="' + p.detalle + '" stroke-width="2" opacity="0.4"/>');
+    }
+    partes.push('<path d="M148 226 C 168 210, 208 202, 238 210" fill="none" stroke="' + p.detalle + '" stroke-width="2.5" opacity="0.5"/>');
 
     /* cabeza */
     var hx, hy, hr;
@@ -201,33 +231,31 @@
     else if (f.cuello === "medio") { hx = 270; hy = 124; hr = 30; }
     else { hx = 274; hy = 140; hr = 34; }
 
-    /* penacho (debajo de la cabeza, para que quede cubierto en la base) */
+    /* penacho */
     var cCresta = cresta(f.cresta === true ? true : f.cresta === "adelante" ? "adelante" : false, p, hx, hy, hr);
     if (cCresta) partes.push(cCresta);
 
     /* marcas (pecho, ala, cara) */
     if (ave.id !== "carancho") partes.push(marcas(ave.id, p));
 
-    /* ala plegada */
-    partes.push(
-      '<ellipse cx="192" cy="212" rx="58" ry="36" transform="rotate(-16 192 212)" fill="' + p.ala + '"/>' +
-      '<path d="M148 224 C 168 208, 206 200, 236 208" fill="none" stroke="' + p.detalle + '" stroke-width="3" opacity="0.45"/>' +
-      '<path d="M154 236 C 176 220, 210 214, 238 220" fill="none" stroke="' + p.detalle + '" stroke-width="3" opacity="0.35"/>'
-    );
-
-    /* cabeza + cara */
-    partes.push('<circle cx="' + hx + '" cy="' + hy + '" r="' + hr + '" fill="' + p.cabeza + '"/>');
+    /* cabeza con volumen */
+    partes.push('<circle cx="' + hx + '" cy="' + hy + '" r="' + hr + '" fill="url(#cabezaGrad)"/>');
     if (ave.id === "carancho") {
       partes.push(marcas("carancho", p));
     }
+    /* mejilla / garganta clara */
+    partes.push('<ellipse cx="' + (hx - 4) + '" cy="' + (hy + 6) + '" rx="' + (hr * 0.55) + '" ry="' + (hr * 0.4) + '" fill="' + p.barriga + '" opacity="0.35"/>');
 
     /* ojo */
     partes.push('<circle cx="' + (hx + 10) + '" cy="' + (hy - 6) + '" r="7.5" fill="#fff"/>');
     partes.push('<circle cx="' + (hx + 11) + '" cy="' + (hy - 6) + '" r="4.5" fill="' + p.ojo + '"/>');
-    partes.push('<circle cx="' + (hx + 13) + '" cy="' + (hy - 8) + '" r="1.5" fill="#fff"/>');
+    partes.push('<circle cx="' + (hx + 13) + '" cy="' + (hy - 8) + '" r="1.6" fill="#fff" opacity="0.9"/>');
 
     /* pico */
     partes.push(pico(f.pico, p, hx + hr - 4, hy + 2));
+
+    /* contorno sutil */
+    partes.push('<circle cx="' + hx + '" cy="' + hy + '" r="' + hr + '" fill="none" stroke="' + p.cabeza + '" stroke-width="0.6" opacity="0.4"/>');
 
     return partes.join("");
   }

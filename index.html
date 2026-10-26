@@ -55,7 +55,7 @@
     }
 
     window.AVES.forEach(function (a) {
-      var arte = '<img class="arte-foto" src="assets/ave-25d/' + a.id + '.png" alt="' + a.nombre + '">';
+      var arte = window.AvesSVG.aveSVG(a, { width: 400, height: 400, colorFondo: "#efe5cf" });
       var card = document.createElement("article");
       card.className = "ficha-card";
       card.style.borderTopColor = a.color;

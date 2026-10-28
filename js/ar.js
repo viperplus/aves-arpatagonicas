@@ -57,7 +57,7 @@
       /* entidad intermedia: sigue al ancla con filtro anti-temblor */
       var suave = document.createElement("a-entity");
       suave.setAttribute("suavizar-ancla", "");
-      suave.appendChild(window.Aves25D.crearAve25D(ave, true));
+      suave.appendChild(window.Aves25D.crearAve25D(ave, false));
       ancla.appendChild(suave);
       escena.appendChild(ancla);
 
@@ -130,7 +130,7 @@
     if (!demoAnchor) return;
     while (demoAnchor.firstChild) demoAnchor.removeChild(demoAnchor.firstChild);
     var ave = window.AVES[i];
-    demoAnchor.appendChild(window.Aves25D.crearAve25D(ave));
+    demoAnchor.appendChild(window.Aves25D.crearAve25D(ave, false));
     mostrarFichaDemo(i);
     /* marcar chip activo */
     var chips = document.querySelectorAll("#demo-chips .chip");

@@ -12,18 +12,39 @@ const require = createRequire(import.meta.url);
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const raiz = join(__dirname, "..");
 
-/* cargamos datos.js y aves-svg.js (usan window/globalThis) */
 globalThis.window = globalThis;
 require(join(raiz, "js", "datos.js"));
 require(join(raiz, "js", "aves-svg.js"));
 const AVES = globalThis.window.AVES;
-const { aveSVG, fondoSVG } = globalThis.window.AvesSVG;
+const { aveSVG } = globalThis.window.AvesSVG;
 
-const ANCHO = 1000;   /* px de la tarjeta */
-const ALTO = 1414;    /* proporción A4 */
+const ANCHO = 1000;
+const ALTO = 1414;
+const ILLUS_DIR = join(raiz, "assets", "ilustraciones");
+
+function getIlustracion(ave) {
+  const candidatos = [".jpg", ".jpeg", ".png"];
+  for (const ext of candidatos) {
+    const p = join(ILLUS_DIR, ave.id + ext);
+    if (existsSync(p)) {
+      const buf = readFileSync(p);
+      const mime = ext === ".png" ? "image/png" : "image/jpeg";
+      return `data:${mime};base64,${buf.toString("base64")}`;
+    }
+  }
+  return null;
+}
 
 function htmlTarjeta(ave) {
-  const svg = aveSVG(ave, { width: 560, height: 560, colorFondo: "#f6efdf" });
+  const imgData = getIlustracion(ave);
+  const estado = ave.estado || "Preocupación menor (LC)";
+  const epoca = ave.epoca || "Residente.";
+  const dist = ave.distribucion || "Argentina.";
+  
+  const ilustracionHtml = imgData 
+    ? `<img src="${imgData}" alt="${ave.nombre}" />`
+    : aveSVG(ave, { width: 520, height: 520, colorFondo: "#f6efdf" });
+    
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -39,105 +60,158 @@ function htmlTarjeta(ave) {
     position: relative;
     overflow: hidden;
   }
-  /* borde doble decorativo */
+  /* marco fino para impresión */
   .marco {
-    position:absolute; inset:26px;
-    border:6px solid ${ave.color};
-    border-radius: 26px;
+    position:absolute; inset:18px;
+    border:4px solid ${ave.color};
+    border-radius: 28px;
   }
   .marco-int {
-    position:absolute; inset:40px;
-    border:2px solid ${ave.color};
-    border-radius: 18px;
-    opacity:.55;
-  }
-  /* puntos decorativos (ayudan al reconocimiento) */
-  .puntos {
-    position:absolute; inset:52px;
-    border-radius:14px;
-    background-image:
-      radial-gradient(${ave.color} 1.6px, transparent 1.7px);
-    background-size: 26px 26px;
-    opacity:.13;
+    position:absolute; inset:30px;
+    border:1px solid ${ave.color};
+    border-radius: 20px;
+    opacity:.4;
   }
   .cabecera {
     position:relative;
     text-align:center;
-    padding: 62px 70px 0;
+    padding: 52px 70px 0;
   }
   .grupo {
     display:inline-block;
     background:${ave.color};
     color:#fff;
-    font-size:27px;
+    font-size:22px;
     font-weight:700;
-    letter-spacing:2px;
+    letter-spacing:3px;
     text-transform:uppercase;
-    padding:9px 26px;
+    padding:6px 22px;
     border-radius:999px;
   }
   h1 {
-    font-size: 80px;
-    margin-top: 18px;
-    line-height:1.02;
+    font-size: 72px;
+    margin-top: 12px;
+    line-height:1.0;
     letter-spacing:-1px;
+    color:#2b2418;
   }
   .cientifico {
     font-style: italic;
-    font-size: 34px;
+    font-size: 28px;
     color:#6b5b43;
-    margin-top: 8px;
+    margin-top: 4px;
   }
   .ilustracion {
     position:relative;
     text-align:center;
-    margin-top: 8px;
+    margin: 10px auto 0;
+    width: 560px;
+    height: 560px;
+    background: #ffffff;
+    border-radius: 16px;
+    border: 2px solid ${ave.color};
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+  }
+  .ilustracion img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+    padding: 10px;
+  }
+  .ilustracion svg {
+    display:block;
+    width:520px;
+    height:520px;
+  }
+  .badges {
+    position:relative;
+    margin: 14px 70px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  .badge {
+    background: ${ave.color};
+    color: #fff;
+    font-size: 19px;
+    font-weight: 600;
+    padding: 6px 16px;
+    border-radius: 999px;
+    letter-spacing: .3px;
+  }
+  .badge.alt {
+    background: transparent;
+    color: ${ave.color};
+    border: 1.5px solid ${ave.color};
   }
   .ficha {
     position:relative;
-    margin: 4px 74px 0;
-    background: #fffdf7;
-    border:3px solid ${ave.color};
-    border-radius: 20px;
-    padding: 20px 28px;
+    margin: 14px 70px 0;
+    background: #ffffff;
+    border: 1.5px solid ${ave.color};
+    border-radius: 14px;
+    padding: 12px 20px;
   }
-  .fila { display:flex; gap:18px; margin-bottom:12px; align-items:flex-start; }
+  .fila {
+    display:flex;
+    gap: 16px;
+    margin-bottom: 6px;
+    align-items: baseline;
+  }
   .fila:last-child { margin-bottom:0; }
   .etiqueta {
-    flex: 0 0 200px;
-    font-weight:700;
-    font-size:26px;
-    text-transform:uppercase;
-    letter-spacing:1px;
-    color:${ave.color};
-    line-height:1.2;
+    flex: 0 0 140px;
+    font-weight: 700;
+    font-size: 21px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: ${ave.color};
   }
-  .valor { font-size:28px; line-height:1.22; color:#2b2418; }
+  .valor {
+    font-size: 23px;
+    line-height: 1.25;
+    color: #2b2418;
+  }
   .dato {
     position:relative;
-    margin: 18px 74px 0;
-    background: ${ave.color};
-    color:#fff;
-    border-radius: 20px;
-    padding: 20px 28px;
+    margin: 12px 70px 0;
+    background: #fff8f0;
+    border-left: 4px solid ${ave.color};
+    border-radius: 8px;
+    padding: 12px 18px;
   }
   .dato .etiqueta2 {
-    font-size:23px; font-weight:800; letter-spacing:2px; text-transform:uppercase; opacity:.9;
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: 1.8px;
+    text-transform: uppercase;
+    color: ${ave.color};
   }
-  .dato .texto { font-size:27px; line-height:1.26; margin-top:7px; }
+  .dato .texto {
+    font-size: 22px;
+    line-height: 1.28;
+    margin-top: 4px;
+    color: #2b2418;
+  }
   .pie {
     position:relative;
-    margin: 18px 74px 0;
+    margin: 14px 70px 0;
     text-align:center;
-    font-size:24px; color:#6b5b43;
+    font-size: 18px;
+    color: #6b5b43;
+    letter-spacing: .3px;
   }
-  .pie .app { font-weight:700; color:${ave.color}; }
 </style>
 </head>
 <body>
   <div class="marco"></div>
   <div class="marco-int"></div>
-  <div class="puntos"></div>
 
   <div class="cabecera">
     <span class="grupo">${ave.grupo}</span>
@@ -145,16 +219,19 @@ function htmlTarjeta(ave) {
     <div class="cientifico">${ave.cientifico}</div>
   </div>
 
-  <div class="ilustracion">${svg}</div>
+  <div class="ilustracion">${ilustracionHtml}</div>
+
+  <div class="badges">
+    <span class="badge">TAMAÑO: ${ave.tamano}</span>
+    <span class="badge alt">HÁBITAT: ${ave.habitat}</span>
+    <span class="badge alt">ÉPOCA: ${ave.epoca || "Residente"}</span>
+    <span class="badge alt">DISTRIBUCIÓN: ${ave.distribucion || "Argentina"}</span>
+  </div>
 
   <div class="ficha">
-    <div class="fila"><div class="etiqueta">Tamaño</div><div class="valor">${ave.tamano}</div></div>
     <div class="fila"><div class="etiqueta">Alimentación</div><div class="valor">${ave.alimento}</div></div>
-    <div class="fila"><div class="etiqueta">Hábitat</div><div class="valor">${ave.habitat}</div></div>
     <div class="fila"><div class="etiqueta">Dónde verla</div><div class="valor">${ave.donde}</div></div>
-    <div class="fila"><div class="etiqueta">Estado</div><div class="valor">${ave.estado || "Preocupación menor (LC)"}</div></div>
-    <div class="fila"><div class="etiqueta">Época</div><div class="valor">${ave.epoca || "Residente."}</div></div>
-    <div class="fila"><div class="etiqueta">Distribución</div><div class="valor">${ave.distribucion || "Argentina."}</div></div>
+    <div class="fila"><div class="etiqueta">Estado</div><div class="valor">${estado}</div></div>
   </div>
 
   <div class="dato">
@@ -162,42 +239,7 @@ function htmlTarjeta(ave) {
     <div class="texto">${ave.dato}</div>
   </div>
 
-  <div class="pie">Apuntá la cámara de la app <span class="app">Aves de la Patagonia</span> a esta tarjeta</div>
+  <div class="pie">Aves de la Patagonia · Guía de campo con RA</div>
 </body>
 </html>`;
 }
-
-const edgeCandidates = [
-  "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe",
-  "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe"
-];
-const edge = edgeCandidates.find((p) => existsSync(p));
-if (!edge) {
-  console.error("No encontré Microsoft Edge.");
-  process.exit(1);
-}
-
-const dirTmp = join(raiz, "herramientas", "tmp_tarjetas");
-mkdirSync(dirTmp, { recursive: true });
-mkdirSync(join(raiz, "tarjetas"), { recursive: true });
-
-for (const ave of AVES) {
-  const htmlPath = join(dirTmp, `${ave.id}.html`);
-  const pngPath = join(raiz, "tarjetas", `${ave.id}.png`);
-  writeFileSync(htmlPath, htmlTarjeta(ave), "utf8");
-
-  execFileSync(edge, [
-    "--headless",
-    "--disable-gpu",
-    "--no-sandbox",
-    "--hide-scrollbars",
-    "--force-device-scale-factor=1",
-    `--window-size=${ANCHO},${ALTO}`,
-    `--screenshot=${pngPath}`,
-    `file:///${htmlPath.replace(/\\/g, "/")}`
-  ], { stdio: "ignore", timeout: 60000 });
-
-  console.log("OK", ave.id);
-}
-
-console.log(`Listo: ${AVES.length} tarjetas en /tarjetas`);

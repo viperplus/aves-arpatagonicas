@@ -227,8 +227,8 @@
     AFRAME.registerComponent("suavizar-ancla", {
       schema: {
         corteMin: { type: "number", default: 0.5 },  /* Hz de corte en reposo */
-        beta: { type: "number", default: 0.008 },    /* Hz por cada unidad/s */
-        corteVel: { type: "number", default: 1 },    /* Hz de la velocidad */
+        beta: \{ type: "number", default: 0.02 \},    /* Hz por cada unidad/s */
+        corteVel: \{ type: "number", default: 0.4 \},    /* Hz de la velocidad */
         salto: { type: "number", default: 45 }       /* unidades: rezago máximo */
       },
       init: function () {

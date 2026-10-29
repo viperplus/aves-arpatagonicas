@@ -1,7 +1,4 @@
-/* Genera las tarjetas impresas (PNG) a partir de datos.js + aves-svg.js.
-   Uso: node herramientas/generar-tarjetas.mjs
-   Requiere Microsoft Edge instalado (viene con Windows 10/11). */
-
+/* Genera las tarjetas impresas (PNG) con las ilustraciones reales */
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
@@ -14,9 +11,7 @@ const raiz = join(__dirname, "..");
 
 globalThis.window = globalThis;
 require(join(raiz, "js", "datos.js"));
-require(join(raiz, "js", "aves-svg.js"));
 const AVES = globalThis.window.AVES;
-const { aveSVG } = globalThis.window.AvesSVG;
 
 const ANCHO = 1000;
 const ALTO = 1414;
@@ -37,14 +32,7 @@ function getIlustracion(ave) {
 
 function htmlTarjeta(ave) {
   const imgData = getIlustracion(ave);
-  const estado = ave.estado || "Preocupación menor (LC)";
-  const epoca = ave.epoca || "Residente.";
-  const dist = ave.distribucion || "Argentina.";
-  
-  const ilustracionHtml = imgData 
-    ? `<img src="${imgData}" alt="${ave.nombre}" />`
-    : aveSVG(ave, { width: 520, height: 520, colorFondo: "#f6efdf" });
-    
+
   return `<!DOCTYPE html>
 <html lang="es">
 <head>
@@ -55,157 +43,103 @@ function htmlTarjeta(ave) {
   html,body { width:${ANCHO}px; height:${ALTO}px; }
   body {
     font-family: "Segoe UI", Arial, sans-serif;
-    background: #f6efdf;
-    color: #2b2418;
+    background: #f6efe2;
+    color: #1a150b;
     position: relative;
     overflow: hidden;
   }
-  /* marco fino para impresión */
   .marco {
-    position:absolute; inset:18px;
-    border:4px solid ${ave.color};
-    border-radius: 28px;
+    position:absolute; inset:16px;
+    border:6px solid ${ave.color};
+    border-radius: 24px;
   }
   .marco-int {
-    position:absolute; inset:30px;
-    border:1px solid ${ave.color};
-    border-radius: 20px;
+    position:absolute; inset:28px;
+    border:2px solid ${ave.color};
+    border-radius: 16px;
     opacity:.4;
   }
   .cabecera {
     position:relative;
     text-align:center;
-    padding: 52px 70px 0;
+    padding: 38px 80px 0;
   }
   .grupo {
     display:inline-block;
     background:${ave.color};
     color:#fff;
-    font-size:22px;
-    font-weight:700;
-    letter-spacing:3px;
+    font-size:20px;
+    font-weight:800;
+    letter-spacing:4px;
     text-transform:uppercase;
-    padding:6px 22px;
+    padding:6px 28px;
     border-radius:999px;
   }
   h1 {
-    font-size: 72px;
-    margin-top: 12px;
-    line-height:1.0;
-    letter-spacing:-1px;
-    color:#2b2418;
+    font-size: 78px;
+    margin-top: 10px;
+    line-height:0.95;
+    letter-spacing:-2px;
   }
   .cientifico {
     font-style: italic;
-    font-size: 28px;
-    color:#6b5b43;
+    font-size: 30px;
+    color:#5b4b2e;
     margin-top: 4px;
   }
   .ilustracion {
     position:relative;
-    text-align:center;
-    margin: 10px auto 0;
-    width: 560px;
-    height: 560px;
+    margin: 14px 80px 0;
+    height: 620px;
     background: #ffffff;
-    border-radius: 16px;
-    border: 2px solid ${ave.color};
+    border: 3px solid ${ave.color};
+    border-radius: 14px;
     overflow: hidden;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 8px rgba(0,0,0,.08);
+    display:flex;
+    align-items:center;
+    justify-content:center;
   }
   .ilustracion img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    display: block;
-    padding: 10px;
-  }
-  .ilustracion svg {
+    object-fit: cover;
+    object-position: center 20%;
     display:block;
-    width:520px;
-    height:520px;
   }
-  .badges {
+  .grid {
     position:relative;
-    margin: 14px 70px 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: center;
+    margin: 16px 80px 0;
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 18px;
   }
-  .badge {
-    background: ${ave.color};
-    color: #fff;
-    font-size: 19px;
-    font-weight: 600;
-    padding: 6px 16px;
-    border-radius: 999px;
-    letter-spacing: .3px;
+  .bloque {
+    background:#fff;
+    border:2px solid ${ave.color};
+    border-radius: 12px;
+    padding: 8px 16px;
   }
-  .badge.alt {
-    background: transparent;
-    color: ${ave.color};
-    border: 1.5px solid ${ave.color};
-  }
-  .ficha {
-    position:relative;
-    margin: 14px 70px 0;
-    background: #ffffff;
-    border: 1.5px solid ${ave.color};
-    border-radius: 14px;
-    padding: 12px 20px;
-  }
-  .fila {
-    display:flex;
-    gap: 16px;
-    margin-bottom: 6px;
-    align-items: baseline;
-  }
-  .fila:last-child { margin-bottom:0; }
+  .bloque.full { grid-column: 1 / -1; }
   .etiqueta {
-    flex: 0 0 140px;
-    font-weight: 700;
-    font-size: 21px;
-    text-transform: uppercase;
-    letter-spacing: 1.2px;
-    color: ${ave.color};
+    display:block;
+    font-size:18px;
+    font-weight:800;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:${ave.color};
+    margin-bottom: 2px;
   }
   .valor {
-    font-size: 23px;
-    line-height: 1.25;
-    color: #2b2418;
+    font-size:24px;
+    line-height:1.24;
   }
   .dato {
     position:relative;
-    margin: 12px 70px 0;
-    background: #fff8f0;
-    border-left: 4px solid ${ave.color};
-    border-radius: 8px;
-    padding: 12px 18px;
-  }
-  .dato .etiqueta2 {
-    font-size: 19px;
-    font-weight: 800;
-    letter-spacing: 1.8px;
-    text-transform: uppercase;
-    color: ${ave.color};
-  }
-  .dato .texto {
-    font-size: 22px;
-    line-height: 1.28;
-    margin-top: 4px;
-    color: #2b2418;
-  }
-  .pie {
-    position:relative;
-    margin: 14px 70px 0;
-    text-align:center;
-    font-size: 18px;
-    color: #6b5b43;
-    letter-spacing: .3px;
+    margin: 14px 80px 0;
+    background:#fff;
+    border:2px solid ${ave.color};
+    border-radius: 12px;
+    padding: 10px 18px;
   }
 </style>
 </head>
@@ -219,27 +153,53 @@ function htmlTarjeta(ave) {
     <div class="cientifico">${ave.cientifico}</div>
   </div>
 
-  <div class="ilustracion">${ilustracionHtml}</div>
+  <div class="ilustracion"><img src="${imgData}" alt="${ave.nombre}"></div>
 
-  <div class="badges">
-    <span class="badge">TAMAÑO: ${ave.tamano}</span>
-    <span class="badge alt">HÁBITAT: ${ave.habitat}</span>
-    <span class="badge alt">ÉPOCA: ${ave.epoca || "Residente"}</span>
-    <span class="badge alt">DISTRIBUCIÓN: ${ave.distribucion || "Argentina"}</span>
-  </div>
-
-  <div class="ficha">
-    <div class="fila"><div class="etiqueta">Alimentación</div><div class="valor">${ave.alimento}</div></div>
-    <div class="fila"><div class="etiqueta">Dónde verla</div><div class="valor">${ave.donde}</div></div>
-    <div class="fila"><div class="etiqueta">Estado</div><div class="valor">${estado}</div></div>
+  <div class="grid">
+    <div class="bloque"><span class="etiqueta">Tamaño</span><span class="valor">${ave.tamano}</span></div>
+    <div class="bloque"><span class="etiqueta">Hábitat</span><span class="valor">${ave.habitat}</span></div>
+    <div class="bloque"><span class="etiqueta">Alimentación</span><span class="valor">${ave.alimento}</span></div>
+    <div class="bloque"><span class="etiqueta">Dónde verla</span><span class="valor">${ave.donde}</span></div>
+    <div class="bloque"><span class="etiqueta">Época</span><span class="valor">${ave.epoca || "Residente"}</span></div>
+    <div class="bloque"><span class="etiqueta">Distribución</span><span class="valor">${ave.distribucion || "Argentina"}</span></div>
   </div>
 
   <div class="dato">
-    <div class="etiqueta2">Dato curioso</div>
-    <div class="texto">${ave.dato}</div>
+    <span class="etiqueta">Dato curioso</span>
+    <div class="valor">${ave.dato}</div>
   </div>
 
-  <div class="pie">Aves de la Patagonia · Guía de campo con RA</div>
 </body>
 </html>`;
 }
+
+function main() {
+  mkdirSync(join(raiz, "tarjetas"), { recursive: true });
+  const edge = "C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe";
+  const edge64 = "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe";
+  const exe = existsSync(edge64) ? edge64 : edge;
+
+  for (const ave of AVES) {
+    const html = htmlTarjeta(ave);
+    const tmp = join(raiz, "herramientas", `tmp_${ave.id}.html`);
+    const out = join(raiz, "tarjetas", `${ave.id}.png`);
+    writeFileSync(tmp, html, "utf8");
+    try {
+      execFileSync(exe, [
+        "--headless=new",
+        "--disable-gpu",
+        "--no-sandbox",
+        `--window-size=${ANCHO},${ALTO}`,
+        "--virtual-time-budget=6000",
+        `--screenshot=${out}`,
+        `file:///${tmp.replace(/\\/g, "/")}`
+      ], { stdio: "ignore" });
+      console.log("ok", ave.id);
+    } catch (e) {
+      console.log("ERR", ave.id);
+    }
+  }
+  console.log("listo");
+}
+
+main();

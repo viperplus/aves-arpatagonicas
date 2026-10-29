@@ -15,17 +15,13 @@ const AVES = globalThis.window.AVES;
 
 const ANCHO = 1000;
 const ALTO = 1414;
-const ILLUS_DIR = join(raiz, "assets", "ilustraciones");
+const ILLUS_DIR = join(raiz, "assets", "ilustraciones-transp");
 
 function getIlustracion(ave) {
-  const candidatos = [".jpg", ".jpeg", ".png"];
-  for (const ext of candidatos) {
-    const p = join(ILLUS_DIR, ave.id + ext);
-    if (existsSync(p)) {
-      const buf = readFileSync(p);
-      const mime = ext === ".png" ? "image/png" : "image/jpeg";
-      return `data:${mime};base64,${buf.toString("base64")}`;
-    }
+  const p = join(ILLUS_DIR, ave.id + ".png");
+  if (existsSync(p)) {
+    const buf = readFileSync(p);
+    return `data:image/png;base64,${buf.toString("base64")}`;
   }
   return null;
 }
@@ -90,7 +86,7 @@ function htmlTarjeta(ave) {
   .ilustracion {
     position:relative;
     margin: 14px 80px 0;
-    height: 620px;
+    height: 640px;
     background: #ffffff;
     border: 3px solid ${ave.color};
     border-radius: 14px;
@@ -100,11 +96,12 @@ function htmlTarjeta(ave) {
     justify-content:center;
   }
   .ilustracion img {
-    width: 100%;
     height: 100%;
-    object-fit: cover;
-    object-position: center 20%;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
     display:block;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,.08));
   }
   .grid {
     position:relative;

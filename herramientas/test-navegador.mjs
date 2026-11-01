@@ -152,22 +152,15 @@ async function main() {
   });
   await browser.defaultBrowserContext().overridePermissions(base, ["camera"]);
 
-  /* ---- 1. portada ---- */
+  /* ---- 1. portada: redirige al visor AR ---- */
   console.log("\n[1] index.html");
   let page = await browser.newPage();
   await page.setViewport({ width: 1200, height: 900 });
   let errs = capturar(page);
   await page.goto(base + "/index.html", { waitUntil: "networkidle0", timeout: 40000 });
-  const fichas = await page.$$eval(".ficha-card", e => e.length);
-  check(fichas === N, `se renderizan las ${N} fichas (${fichas})`);
-  const vids = await page.$$eval(".arte-video", e => e.length);
-  check(vids === N, `las ${N} fichas tienen video (${vids})`);
-  await page.waitForFunction((n) => {
-    const vs = document.querySelectorAll(".arte-video");
-    return vs.length === n && [...vs].every(v => v.classList.contains("listo"));
-  }, { timeout: 20000 }, N).catch(() => {});
-  const listos = await page.$$eval(".arte-video", e => e.filter(v => v.classList.contains("listo")).length);
-  check(listos === N, `los ${N} videos cargan y reproducen (${listos})`);
+  await new Promise(r => setTimeout(r, 800));
+  const enAR = /ar\.html/.test(page.url());
+  check(enAR, `la portada redirige al visor AR (${page.url().split("/").pop()})`);
   const cantos = await page.evaluate(async () => {
     const ids = Object.keys(window.CANTOS || {});
     const ok = await Promise.all(ids.map(id =>
@@ -176,18 +169,6 @@ async function main() {
   });
   check(cantos.n === N && cantos.ok === N,
     `los ${N} cantos disponibles (${cantos.ok}/${cantos.n} responden)`);
-  const botones = await page.$$eval(".btn-canto", e => e.length);
-  check(botones === N, `las ${N} fichas tienen boton de canto (${botones})`);
-  const fotos = await page.evaluate(async () => {
-    const ids = Object.keys(window.FOTOS || {});
-    const ok = await Promise.all(ids.map(id =>
-      fetch("assets/ave-25d/" + id + ".png").then(r => r.ok).catch(() => false)));
-    return { n: ids.length, ok: ok.filter(Boolean).length };
-  });
-  check(fotos.n === N && fotos.ok === N,
-    `las ${N} fotos reales con credito responden (${fotos.ok}/${fotos.n})`);
-  const creditos = await page.$$eval(".creditos", e => e.length);
-  check(creditos === 2, `el pie lista fotos y cantos con credito (${creditos} listas)`);
   check(errs.length === 0, `sin errores JS (${errs.length})${errs[0] ? " -> " + errs[0] : ""}`);
   await page.screenshot({ path: path.join(tmp, "01-index.png"), fullPage: true });
 

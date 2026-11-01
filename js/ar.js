@@ -226,10 +226,10 @@
     if (typeof AFRAME === "undefined" || AFRAME.components["suavizar-ancla"]) return;
     AFRAME.registerComponent("suavizar-ancla", {
       schema: {
-        corteMin: { type: "number", default: 0.5 },  /* Hz de corte en reposo */
-        beta: \{ type: "number", default: 0.02 \},    /* Hz por cada unidad/s */
-        corteVel: \{ type: "number", default: 0.4 \},    /* Hz de la velocidad */
-        salto: { type: "number", default: 45 }       /* unidades: rezago máximo */
+        corteMin: { type: "number", default: 0.15 },
+        beta: { type: "number", default: 0.02 },
+        corteVel: { type: "number", default: 0.4 },
+        salto: { type: "number", default: 40 }
       },
       init: function () {
         var T = AFRAME.THREE;

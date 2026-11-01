@@ -28,6 +28,7 @@ function getIlustracion(ave) {
 
 function htmlTarjeta(ave) {
   const imgData = getIlustracion(ave);
+  const etiqueta = (t) => `<span class="etiqueta">${t}</span>`;
 
   return `<!DOCTYPE html>
 <html lang="es">
@@ -43,22 +44,27 @@ function htmlTarjeta(ave) {
     color: #1a150b;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    padding: 50px 80px;
   }
   .marco {
     position:absolute; inset:16px;
     border:6px solid ${ave.color};
     border-radius: 24px;
+    pointer-events:none;
   }
   .marco-int {
     position:absolute; inset:28px;
     border:2px solid ${ave.color};
     border-radius: 16px;
     opacity:.4;
+    pointer-events:none;
   }
   .cabecera {
     position:relative;
     text-align:center;
-    padding: 38px 80px 0;
+    flex: 0 0 auto;
   }
   .grupo {
     display:inline-block;
@@ -72,21 +78,22 @@ function htmlTarjeta(ave) {
     border-radius:999px;
   }
   h1 {
-    font-size: 78px;
-    margin-top: 10px;
+    font-size: 74px;
+    margin-top: 8px;
     line-height:0.95;
     letter-spacing:-2px;
   }
   .cientifico {
     font-style: italic;
-    font-size: 30px;
+    font-size: 28px;
     color:#5b4b2e;
     margin-top: 4px;
   }
   .ilustracion {
     position:relative;
-    margin: 14px 80px 0;
-    height: 640px;
+    margin: 14px 0 0;
+    flex: 1 1 auto;
+    min-height: 0;
     background: #ffffff;
     border: 3px solid ${ave.color};
     border-radius: 14px;
@@ -96,16 +103,17 @@ function htmlTarjeta(ave) {
     justify-content:center;
   }
   .ilustracion img {
-    height: 100%;
-    width: auto;
+    max-height: 100%;
     max-width: 100%;
+    width: auto;
+    height: auto;
     object-fit: contain;
     display:block;
-    filter: drop-shadow(0 4px 10px rgba(0,0,0,.08));
   }
   .grid {
     position:relative;
-    margin: 16px 80px 0;
+    margin: 14px 0 0;
+    flex: 0 0 auto;
     display:grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px 18px;
@@ -132,7 +140,8 @@ function htmlTarjeta(ave) {
   }
   .dato {
     position:relative;
-    margin: 14px 80px 0;
+    margin: 14px 0 0;
+    flex: 0 0 auto;
     background:#fff;
     border:2px solid ${ave.color};
     border-radius: 12px;
@@ -153,16 +162,16 @@ function htmlTarjeta(ave) {
   <div class="ilustracion"><img src="${imgData}" alt="${ave.nombre}"></div>
 
   <div class="grid">
-    <div class="bloque"><span class="etiqueta">Tamaño</span><span class="valor">${ave.tamano}</span></div>
-    <div class="bloque"><span class="etiqueta">Hábitat</span><span class="valor">${ave.habitat}</span></div>
-    <div class="bloque"><span class="etiqueta">Alimentación</span><span class="valor">${ave.alimento}</span></div>
-    <div class="bloque"><span class="etiqueta">Dónde verla</span><span class="valor">${ave.donde}</span></div>
-    <div class="bloque"><span class="etiqueta">Época</span><span class="valor">${ave.epoca || "Residente"}</span></div>
-    <div class="bloque"><span class="etiqueta">Distribución</span><span class="valor">${ave.distribucion || "Argentina"}</span></div>
+    <div class="bloque">${etiqueta("Tamaño")}<span class="valor">${ave.tamano}</span></div>
+    <div class="bloque">${etiqueta("Hábitat")}<span class="valor">${ave.habitat}</span></div>
+    <div class="bloque">${etiqueta("Alimentación")}<span class="valor">${ave.alimento}</span></div>
+    <div class="bloque">${etiqueta("Dónde verla")}<span class="valor">${ave.donde}</span></div>
+    <div class="bloque">${etiqueta("Época")}<span class="valor">${ave.epoca || "Residente"}</span></div>
+    <div class="bloque">${etiqueta("Distribución")}<span class="valor">${ave.distribucion || "Argentina"}</span></div>
   </div>
 
   <div class="dato">
-    <span class="etiqueta">Dato curioso</span>
+    ${etiqueta("Dato curioso")}
     <div class="valor">${ave.dato}</div>
   </div>
 

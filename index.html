@@ -3,140 +3,18 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Aves de la Patagonia · Guía de campo con RA</title>
+<title>Aves de la Patagonia · Realidad Aumentada</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%90%A6%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/aves.css">
+<meta http-equiv="refresh" content="0; url=ar.html">
+<style>
+  html,body { margin:0; height:100%; background:#12100c; color:#f6efe2;
+    font-family:"Segoe UI",Arial,sans-serif; display:flex; align-items:center;
+    justify-content:center; }
+  a { color:#ffd77a; font-size:22px; }
+</style>
 </head>
 <body>
-
-<header class="encabezado">
-  <h1 class="titulo">Aves de la Patagonia Norte</h1>
-  <p class="sub">Guía de campo con realidad aumentada · Río Negro</p>
-  <div class="acciones">
-    <a class="btn btn-grande" href="ar.html">🐦 Abrir cámara y escanear</a>
-    <a class="btn btn-fantasma" href="tarjetas.html">🖨️ Imprimir tarjetas</a>
-  </div>
-</header>
-
-<main class="grilla" id="grilla"></main>
-
-<footer class="pie-pag">
-  Veintidós especies de la estepa, los montes y las lagunas de Río Negro.<br>
-  Imprimí las tarjetas, apuntá con el celular y escuchá a cada ave en RA.
-  <details class="creditos">
-    <summary>Créditos de las fotos</summary>
-    <ul id="lista-fotos"></ul>
-  </details>
-  <details class="creditos">
-    <summary>Créditos de los cantos</summary>
-    <ul id="lista-cantos"></ul>
-  </details>
-</footer>
-
-<script src="js/datos.js"></script>
-<script src="js/aves-svg.js"></script>
-<script src="js/videos.js"></script>
-<script src="js/fotos.js"></script>
-<script src="js/sonidos.js"></script>
-<script src="js/cantos.js"></script>
-<script>
-  (function () {
-    var grilla = document.getElementById("grilla");
-
-    function videoHTML(id) {
-      var arch = window.VIDEOS && window.VIDEOS[id];
-      if (!arch || !arch.length) return "";
-      var src = arch.map(function (f) {
-        return '<source src="videos/' + f + '" type="' +
-          (f.slice(-4) === ".mp4" ? "video/mp4" : "video/webm") + '">';
-      }).join("");
-      return '<video class="arte-video" autoplay loop muted playsinline ' +
-        'preload="auto" aria-hidden="true">' + src + "</video>";
-    }
-
-    window.AVES.forEach(function (a) {
-      var arte = window.AvesSVG.aveSVG(a, { width: 400, height: 400, colorFondo: "#efe5cf" });
-      var card = document.createElement("article");
-      card.className = "ficha-card";
-      card.style.borderTopColor = a.color;
-      card.innerHTML =
-        '<div class="arte">' + arte + videoHTML(a.id) +
-          '<button class="btn-canto" data-ave="' + a.id + '" ' +
-            'aria-label="Escuchar el canto de ' + a.nombre + '">🔊</button>' +
-        '</div>' +
-        '<div class="cuerpo">' +
-          '<span class="grupo" style="background:' + a.color + '">' + a.grupo + '</span>' +
-          '<h3>' + a.nombre + '</h3>' +
-          '<div class="cient">' + a.cientifico + '</div>' +
-          '<p class="dato">' + a.dato + '</p>' +
-          '<div class="meta">' +
-            '<div><span>Tamaño</span>' + a.tamano + '</div>' +
-            '<div><span>Alimentación</span>' + a.alimento + '</div>' +
-            '<div><span>Hábitat</span>' + a.habitat + '</div>' +
-          '</div>' +
-        '</div>';
-      grilla.appendChild(card);
-
-      /* el video tapa el SVG recién cuando puede reproducir; si falla, queda el SVG */
-      var vid = card.querySelector(".arte-video");
-      if (vid) {
-        var marca = function () { vid.classList.add("listo"); };
-        if (vid.readyState >= 3) marca();
-        else vid.addEventListener("canplay", marca);
-        vid.addEventListener("error", function () { vid.remove(); });
-        var p = vid.play();
-        if (p && p.catch) p.catch(function () {});
-      }
-
-      /* botón de canto de la ficha */
-      var btnc = card.querySelector(".btn-canto");
-      if (btnc && window.CANTOS && window.CANTOS[a.id]) {
-        btnc.addEventListener("click", function () {
-          window.Cantos.desbloquear();
-          if (window.Cantos.sonando() === a.id) {
-            window.Cantos.parar();
-          } else {
-            window.Cantos.reproducir(a.id);
-          }
-          Array.prototype.forEach.call(
-            document.querySelectorAll(".btn-canto"),
-            function (b) {
-              b.textContent =
-                b.dataset.ave === window.Cantos.sonando() ? "🔊" : "🔇";
-            }
-          );
-        });
-      } else if (btnc) {
-        btnc.remove();
-      }
-    });
-
-    /* créditos de las fotos (Wikimedia Commons) y los cantos (xeno-canto) */
-    function filas(lista, porEspecie) {
-      if (!lista) return;
-      window.AVES.forEach(function (a) {
-        const d = porEspecie(a);
-        if (!d) return;
-        const li = document.createElement("li");
-        li.innerHTML = d;
-        lista.appendChild(li);
-      });
-    }
-    filas(document.getElementById("lista-fotos"), function (a) {
-      const f = window.FOTOS && window.FOTOS[a.id];
-      if (!f) return null;
-      return "<b>" + a.nombre + "</b> — foto de " + f.autor + " · " +
-        f.licencia + " · " + f.fuente +
-        ' · <a href="' + f.pagina + '" target="_blank" rel="noopener">ver original</a>';
-    });
-    filas(document.getElementById("lista-cantos"), function (a) {
-      const c = window.CANTOS && window.CANTOS[a.id];
-      if (!c) return null;
-      return "<b>" + a.nombre + "</b> — grabación de " + c.grabador +
-        " · " + c.licencia +
-        ' · <a href="' + c.pagina + '" target="_blank" rel="noopener">xeno-canto</a>';
-    });
-  })();
-</script>
+  <p>Abriendo la cámara… si no pasa nada, <a href="ar.html">tocá acá</a>.</p>
+  <script>location.replace("ar.html");</script>
 </body>
 </html>

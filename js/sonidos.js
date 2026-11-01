@@ -31,9 +31,9 @@ window.CANTOS = {
   "calandria-grande": {
     "archivo": "calandria-grande.mp3",
     "cientifico": "Mimus saturninus",
-    "grabador": "JAYRSON ARAUJO DE OLIVEIRA",
+    "grabador": "Marcos E. Sosa",
     "licencia": "CC BY-NC-SA 4.0",
-    "pagina": "https://xeno-canto.org/793177"
+    "pagina": "https://xeno-canto.org/1001557"
   },
   "hornero": {
     "archivo": "hornero.mp3",

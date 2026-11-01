@@ -33,6 +33,13 @@
     $("ficha").classList.remove("oculto");
     estado("Tarjeta detectada ✓ " + a.nombre, true);
     if (window.Cantos) window.Cantos.reproducir(a.id);
+    /* reintento de seguridad: en algunos móviles el primer play() se
+       descarta por la política de autoplay; volvemos a intentarlo. */
+    if (window.Cantos) {
+      setTimeout(function () {
+        if (window.Cantos.sonando() !== a.id) window.Cantos.reproducir(a.id);
+      }, 350);
+    }
   }
 
   function ocultarFicha() {

@@ -103,14 +103,32 @@
       "mirar-camara": ""
     });
     var cuerpo = ent({ "corte-vivo": "", "nitido": "" });
-    cuerpo.appendChild(ent({
+    var plano = ent({
       geometry: "primitive: plane; width: " + L + "; height: " + L,
       material: "shader: flat; side: front; transparent: true; alphaTest: 0.03;" +
         " src: #corte-" + ave.id,
       position: "0 " + ((fy - 0.5) * L) + " 0"
-    }));
+    });
+    cuerpo.appendChild(plano);
     pivote.appendChild(cuerpo);
     raiz.appendChild(pivote);
+
+    /* ajusta la proporcion del plano a la imagen real (evita estirar/squish) */
+    (function (plano, fy, L) {
+      var img = new Image();
+      img.onload = function () {
+        var aspect = img.naturalHeight / img.naturalWidth;
+        if (!isFinite(aspect) || aspect <= 0) return;
+        var w, h;
+        if (aspect >= 1) { h = L; w = L / aspect; }
+        else { w = L; h = L * aspect; }
+        try {
+          plano.setAttribute("geometry", "primitive: plane; width: " + w + "; height: " + h);
+          plano.setAttribute("position", "0 " + ((fy - 0.5) * h) + " 0");
+        } catch (e) {}
+      };
+      img.src = "assets/ave-25d/" + ave.id + ".png";
+    })(plano, fy, L);
 
     return raiz;
   }

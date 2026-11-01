@@ -14,16 +14,35 @@
 
   function cantos() { return global.CANTOS || {}; }
 
+  function intentar() {
+    var p = audio.play();
+    if (p && p.catch) p.catch(function (e) {
+      /* Al cambiar rapido de especie la reproduccion se aborta
+         ("interrupted by a new load request"). Reintentamos una vez
+         cuando la fuente nueva ya esta lista. */
+      if (e && e.name === "AbortError") {
+        var rev = function () {
+          audio.removeEventListener("canplay", rev);
+          if (audio.getAttribute("data-ave") === actual && !sil) intentar();
+        };
+        audio.addEventListener("canplay", rev);
+      }
+    });
+  }
+
   function reproducir(id) {
     var c = cantos()[id];
     if (!c) return;
     actual = id;
     if (sil) return;
     if (audio.getAttribute("data-ave") === id && !audio.paused) return;
+    var cambio = audio.getAttribute("data-ave") !== id;
     audio.setAttribute("data-ave", id);
-    audio.src = "sonidos/" + c.archivo;
-    var p = audio.play();
-    if (p && p.catch) p.catch(function () {});
+    if (cambio) {
+      audio.src = "sonidos/" + c.archivo;
+      try { audio.load(); } catch (e) {}
+    }
+    intentar();
   }
 
   function parar() {

@@ -10,7 +10,7 @@
 (function (global) {
   "use strict";
 
-  var L = 1.0;               /* lado del plano: el ave desborda la tarjeta
+  var L = 1.8;              /* lado del plano: el ave desborda la tarjeta
                                  por arriba (efecto de "salir de la tarjeta") */
   var YCAJA = -0.15;         /* borde inferior de la caja impresa */
   var XC = 0;                /* centro óptico del ave en X (fotos centradas) */
@@ -91,7 +91,7 @@
 
     /* sombra de contacto (queda plana sobre la tarjeta, no gira con el ave) */
     raiz.appendChild(ent({
-      geometry: "primitive: circle; radius: 0.15",
+      geometry: "primitive: circle; radius: " + (0.15 * L),
       material: "shader: flat; color: #000000; transparent: true; opacity: 0.16",
       position: "0.01 " + (yPies + 0.002) + " 0.03",
       scale: "1 0.42 1"

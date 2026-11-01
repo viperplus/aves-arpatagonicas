@@ -271,6 +271,9 @@ body.ar { overflow: hidden; background: #12100c; }
   padding: 10px 14px;
   box-shadow: var(--sombra);
   max-width: 560px;
+  max-height: 62vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   margin: 0 auto;
   animation: subir .25s ease;
 }
@@ -299,10 +302,6 @@ body.ar { overflow: hidden; background: #12100c; }
 .ficha-datos b {
   font-size: .8rem;
   font-weight: 600;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 .ficha-dato {
   margin-top: 7px;
@@ -312,10 +311,6 @@ body.ar { overflow: hidden; background: #12100c; }
   border-radius: 0 8px 8px 0;
   font-size: .8rem;
   line-height: 1.35;
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
 
 /* --- panel demo --- */

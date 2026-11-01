@@ -68,7 +68,7 @@
     var ids = Object.keys(cantos());
     if (!ids.length) return;
     var v = audio.volume;
-    audio.volume = 0;
+    audio.volume = 0.01;
     if (!audio.getAttribute("data-ave")) {
       audio.setAttribute("data-ave", ids[0]);
       audio.src = "sonidos/" + cantos()[ids[0]].archivo;

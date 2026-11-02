@@ -66,11 +66,10 @@
     window.AVES.forEach(function (ave, i) {
       var ancla = document.createElement("a-entity");
       ancla.setAttribute("mindar-image-target", "targetIndex: " + i);
-      /* entidad intermedia: sigue al ancla con filtro anti-temblor */
-      var suave = document.createElement("a-entity");
-      suave.setAttribute("suavizar-ancla", "");
-      suave.appendChild(window.Aves25D.crearAve25D(ave, false));
-      ancla.appendChild(suave);
+      /* pegar directo al ancla - sin capa intermedia para minimizar latencia */
+      var raiz = window.Aves25D.crearAve25D(ave, false);
+      raiz.setAttribute("suavizar-ancla", "");
+      ancla.appendChild(raiz);
       escena.appendChild(ancla);
 
       ancla.addEventListener("targetFound", function () { mostrarFicha(i); });
@@ -238,9 +237,7 @@
     if (typeof AFRAME === "undefined" || AFRAME.components["suavizar-ancla"]) return;
     AFRAME.registerComponent("suavizar-ancla", {
       schema: {
-        lerpMov: { type: "number", default: 0.85 },
-        lerpQuieto: { type: "number", default: 0.12 },
-        umbralVel: { type: "number", default: 0.08 }
+        lerp: { type: "number", default: 0.92 }
       },
       init: function () {
         var T = AFRAME.THREE;
@@ -275,16 +272,17 @@
           return;
         }
 
-        var dts = Math.max(0.001, (dt || 16.7) / 1000);
         var dist = this.posAnt.distanceTo(this.posR);
-        var vel = dist / dts;
-        this.posAnt.copy(this.posR);
-
-        var a = (vel > this.data.umbralVel) ? this.data.lerpMov : this.data.lerpQuieto;
-
-        this.posS.lerp(this.posR, a);
-        this.quaS.slerp(this.quaR, a);
+        /* si es un salto grande (pérdida/recuperación) pegarlo directo */
+        if (dist > 0.12) {
+          this.posS.copy(this.posR);
+          this.quaS.copy(this.quaR);
+        } else {
+          this.posS.lerp(this.posR, this.data.lerp);
+          this.quaS.slerp(this.quaR, this.data.lerp);
+        }
         this.escS.copy(this.escR);
+        this.posAnt.copy(this.posR);
 
         this.mInv.copy(crudo).invert();
         this.mSuave.compose(this.posS, this.quaS, this.escS);

@@ -89,18 +89,43 @@
       raiz.appendChild(panel);
     }
 
-    /* sombra de contacto (queda plana sobre la tarjeta, no gira con el ave) */
-    raiz.appendChild(ent({
-      geometry: "primitive: circle; radius: " + (0.15 * L),
-      material: "shader: flat; color: #000000; transparent: true; opacity: 0.16",
-      position: "0.01 " + (yPies + 0.002) + " 0.03",
-      scale: "1 0.42 1"
-    }));
+    /* sombra de contacto suave (gradiente) sobre la tarjeta */
+    (function (raiz, yPies, L) {
+      var cv = document.createElement("canvas");
+      cv.width = 128; cv.height = 64;
+      var c = cv.getContext("2d");
+      var g = c.createRadialGradient(64, 32, 0, 64, 32, 64);
+      g.addColorStop(0, "rgba(0,0,0,0.38)");
+      g.addColorStop(0.45, "rgba(0,0,0,0.14)");
+      g.addColorStop(1, "rgba(0,0,0,0)");
+      c.fillStyle = g;
+      c.fillRect(0, 0, 128, 64);
+      var sombra = ent({
+        geometry: "primitive: plane; width: " + (0.34 * L) + "; height: " + (0.15 * L),
+        material: "shader: flat; transparent: true; opacity: 0.95; side: double; depthWrite: false",
+        position: "0 " + (yPies + 0.003) + " 0.02"
+      });
+      var aplicar = function () {
+        var mesh = sombra.getObject3D("mesh");
+        if (!mesh || !mesh.material) return false;
+        var T = (typeof AFRAME !== "undefined") ? AFRAME.THREE : null;
+        if (!T) return false;
+        var tex = new T.CanvasTexture(cv);
+        if ("colorSpace" in tex && T.SRGBColorSpace) tex.colorSpace = T.SRGBColorSpace;
+        mesh.material.map = tex;
+        mesh.material.color.set(0xffffff);
+        mesh.material.needsUpdate = true;
+        return true;
+      };
+      if (!aplicar()) sombra.addEventListener("object3dset", aplicar);
+      raiz.appendChild(sombra);
+    })(raiz, yPies, L);
 
     /* pivote en los pies: el billboard gira alrededor de donde se apoya */
     var pivote = ent({
       position: XC + " " + yPies + " 0.05",
-      "mirar-camara": ""
+      "mirar-camara": "",
+      "aparecer": ""
     });
     var cuerpo = ent({ "corte-vivo": "", "nitido": "" });
     var plano = ent({
@@ -203,18 +228,42 @@
         }
       });
     }
-    if (!AFRAME.components["corte-vivo"]) {
-      AFRAME.registerComponent("corte-vivo", {
-        init: function () { this.t = Math.random() * 10; },
+    if (!AFRAME.components["aparecer"]) {
+      AFRAME.registerComponent("aparecer", {
+        init: function () {
+          this.el.object3D.scale.set(0, 0, 0);
+          this.t = 0;
+          this.dur = 0.22;
+          this.animando = false;
+          this.visibleAnt = false;
+          var p = this.el.parentEl && this.el.parentEl.parentEl;
+          this.esAR = !!(p && p.getAttribute && p.getAttribute("mindar-image-target"));
+          if (!this.esAR) {
+            this.el.object3D.scale.set(1, 1, 1);
+          }
+        },
         tick: function (time, dt) {
-          this.t += dt / 1000;
-          var t = this.t;
-          /* saltocito cada 6 s; balanceo y aleteo con frecuencias que
-             cierran en 6 s exactos (mismo ciclo que los videos del index) */
-          var c = t % 6;
-          var salto = c < 0.45 ? Math.sin(Math.PI * c / 0.45) * 0.018 : 0;
-          this.el.object3D.position.y = Math.sin(t * (2 * Math.PI / 3)) * 0.005 + salto;
-          this.el.object3D.rotation.z = Math.sin(t * (Math.PI / 3)) * 0.045;
+          if (!this.esAR) return;
+          var p = this.el.parentEl && this.el.parentEl.parentEl;
+          var visible = !!(p && p.object3D && p.object3D.visible);
+          if (visible && !this.visibleAnt) {
+            this.animando = true;
+            this.t = 0;
+          }
+          if (!visible) {
+            this.el.object3D.scale.set(0, 0, 0);
+            this.animando = false;
+            this.t = 0;
+          }
+          this.visibleAnt = visible;
+          if (this.animando) {
+            this.t += (dt || 16.7) / 1000;
+            var prog = Math.min(1, this.t / this.dur);
+            var c1 = 1.70158, c3 = c1 + 1;
+            var s = 1 + c3 * Math.pow(prog - 1, 3) + c1 * Math.pow(prog - 1, 2);
+            this.el.object3D.scale.set(s, s, s);
+            if (prog >= 1) this.animando = false;
+          }
         }
       });
     }

@@ -269,15 +269,16 @@ body.ar { overflow: hidden; background: #12100c; }
   background: rgba(255, 253, 247, .97);
   border-radius: 16px;
   padding: 10px 14px;
-  box-shadow: var(--sombra);
+  box-shadow: 0 0 0 0 rgba(212,162,58,.0), var(--sombra);
   max-width: 560px;
   max-height: 62vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   margin: 0 auto;
-  animation: subir .25s ease;
+  animation: subir .25s ease, brillo-ficha .9s ease;
 }
 @keyframes subir { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+@keyframes brillo-ficha { 0% { box-shadow: 0 0 0 0 rgba(212,162,58,.55), var(--sombra); } 100% { box-shadow: 0 0 0 14px rgba(212,162,58,0), var(--sombra); } }
 .ficha-cab { display: flex; justify-content: space-between; align-items: center; }
 .ficha-ar .chip {
   background: var(--acento);

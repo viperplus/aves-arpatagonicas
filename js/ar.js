@@ -229,30 +229,23 @@
   }
 
   /* ---------- componente: suavizado del ancla (anti-temblor) ----------
-     MindAR actualiza la matriz a ~15 fps y con ruido: el ave "vibra" sobre
-     la tarjeta. Cada ancla aloja una entidad intermedia con un filtro
-     One-Euro: casi no suaviza cuando hay movimiento real (no se atrasa)
-     pero rechaza el ruido cuando la tarjeta está quieta. */
+     MindAR actualiza la pose del target. Copiamos la pose al ave de forma
+     directa. Con lerp = 1.0 es una copia exacta: sin interpolación, sin lag,
+     el ave se pega a la tarjeta al acercar/alejar con 1:1. */
   function registrarSuavizado() {
     if (typeof AFRAME === "undefined" || AFRAME.components["suavizar-ancla"]) return;
     AFRAME.registerComponent("suavizar-ancla", {
       schema: {
-        lerp: { type: "number", default: 0.92 }
+        lerp: { type: "number", default: 1.0 }
       },
       init: function () {
         var T = AFRAME.THREE;
         this.ancla = null;
         this.primera = true;
-        this.posS = new T.Vector3();
-        this.quaS = new T.Quaternion();
-        this.escS = new T.Vector3();
-        this.posR = new T.Vector3();
-        this.quaR = new T.Quaternion();
-        this.escR = new T.Vector3();
-        this.posAnt = new T.Vector3();
-        this.mInv = new T.Matrix4();
-        this.mSuave = new T.Matrix4();
-        this.mLocal = new T.Matrix4();
+        this.p = new T.Vector3();
+        this.q = new T.Quaternion();
+        this.p2 = new T.Vector3();
+        this.q2 = new T.Quaternion();
       },
       tick: function (time, dt) {
         if (!this.ancla) this.ancla = this.el.parentEl;
@@ -260,34 +253,23 @@
         if (!ancla || !ancla.object3D) return;
         if (!ancla.object3D.visible) { this.primera = true; return; }
 
-        var crudo = ancla.object3D.matrix;
-        crudo.decompose(this.posR, this.quaR, this.escR);
+        ancla.object3D.updateMatrixWorld(true);
+        ancla.object3D.getWorldPosition(this.p2);
+        ancla.object3D.getWorldQuaternion(this.q2);
 
         if (this.primera) {
           this.primera = false;
-          this.posS.copy(this.posR);
-          this.posAnt.copy(this.posR);
-          this.quaS.copy(this.quaR);
-          this.escS.copy(this.escR);
+          this.el.object3D.position.copy(this.p2);
+          this.el.object3D.quaternion.copy(this.q2);
+          this.p.copy(this.p2);
+          this.q.copy(this.q2);
           return;
         }
 
-        var dist = this.posAnt.distanceTo(this.posR);
-        /* si es un salto grande (pérdida/recuperación) pegarlo directo */
-        if (dist > 0.12) {
-          this.posS.copy(this.posR);
-          this.quaS.copy(this.quaR);
-        } else {
-          this.posS.lerp(this.posR, this.data.lerp);
-          this.quaS.slerp(this.quaR, this.data.lerp);
-        }
-        this.escS.copy(this.escR);
-        this.posAnt.copy(this.posR);
-
-        this.mInv.copy(crudo).invert();
-        this.mSuave.compose(this.posS, this.quaS, this.escS);
-        this.mLocal.multiplyMatrices(this.mInv, this.mSuave);
-        this.mLocal.decompose(this.el.object3D.position, this.el.object3D.quaternion, this.el.object3D.scale);
+        this.p.lerp(this.p2, this.data.lerp);
+        this.q.slerp(this.q2, this.data.lerp);
+        this.el.object3D.position.copy(this.p);
+        this.el.object3D.quaternion.copy(this.q);
       }
     });
   }

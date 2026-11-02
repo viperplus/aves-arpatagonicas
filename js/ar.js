@@ -30,7 +30,12 @@
     $("ficha-ali").textContent = a.alimento;
     $("ficha-hab").textContent = a.habitat;
     $("ficha-dato").textContent = a.dato;
-    $("ficha").classList.remove("oculto");
+    var ficha = $("ficha");
+    ficha.classList.remove("oculto");
+    ficha.classList.remove("brillo");
+    void ficha.offsetWidth;
+    ficha.classList.add("brillo");
+    setTimeout(function(){ ficha.classList.remove("brillo"); }, 900);
     estado("Tarjeta detectada ✓ " + a.nombre, true);
     if (window.Cantos) window.Cantos.reproducir(a.id);
     /* reintento de seguridad: en algunos móviles el primer play() se

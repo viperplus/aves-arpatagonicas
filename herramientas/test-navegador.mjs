@@ -255,6 +255,22 @@ async function main() {
       window.Cantos ? window.Cantos.sonando() : null);
     check(suena === "chimango",
       `suena el canto de la especie detectada (${suena || "silencio"})`);
+
+    /* El ave 3D debe heredar la escala del ancla de MindAR (~1000).
+       Si algo la anula, queda en 1 => 1000x mas chica => sub-pixel e
+       invisible, aunque la deteccion y el canto funcionen. */
+    await new Promise(r => setTimeout(r, 800));
+    const esc = await page.evaluate(() => {
+      const s = document.getElementById("escena");
+      const a = [...s.querySelectorAll("[mindar-image-target]")]
+        .find(x => x.object3D && x.object3D.visible);
+      if (!a || !a.children[0] || !a.children[0].object3D) return null;
+      const v = new AFRAME.THREE.Vector3();
+      a.children[0].object3D.getWorldScale(v);
+      return +v.x.toFixed(1);
+    });
+    check(!!esc && esc > 100,
+      `el ave 3D conserva la escala del ancla, no queda sub-pixel (${esc})`);
   } else {
     check(false, "suena el canto de la especie detectada (no hubo deteccion)");
   }

@@ -8,6 +8,24 @@
   var actual = null;      /* índice del ave detectada */
   var modoDemo = false;
   var demoAnchor = null;
+  var descubiertos = [];
+
+  function cargarDescubidos() {
+    try { var t = localStorage.getItem("aves-descubiertas"); descubiertos = t ? JSON.parse(t) : []; } catch (e) { descubiertos = []; }
+  }
+  function marcarDescubida(id) {
+    if (descubiertos.indexOf(id) === -1) {
+      descubiertos.push(id);
+      try { localStorage.setItem("aves-descubiertas", JSON.stringify(descubiertos)); } catch (e) {}
+    }
+  }
+  function actualizarDescubidos() {
+    var e = $("descubiertos");
+    if (!e) return;
+    var n = descubiertos.length;
+    e.textContent = "🔎 Descubrimientos: " + n + "/" + window.AVES.length;
+    e.classList.toggle("oculto", n === 0);
+  }
 
   function $(id) { return document.getElementById(id); }
 
@@ -37,6 +55,8 @@
     ficha.classList.add("brillo");
     setTimeout(function(){ ficha.classList.remove("brillo"); }, 900);
     estado("Tarjeta detectada ✓ " + a.nombre, true);
+    marcarDescubida(a.id);
+    actualizarDescubidos();
     if (window.Cantos) window.Cantos.reproducir(a.id);
     /* reintento de seguridad: en algunos móviles el primer play() se
        descarta por la política de autoplay; volvemos a intentarlo. */
@@ -56,9 +76,17 @@
   }
 
   function estado(txt, ok) {
-    var e = $("estado");
-    e.textContent = txt;
-    e.classList.toggle("ok", !!ok);
+    var elEst = $("estado");
+    elEst.textContent = txt;
+    elEst.classList.toggle("ok", !!ok);
+  }
+
+  function actualizarDescubidos() {
+    var el = $("descubiertos");
+    if (!el) return;
+    var n = descubiertos.length;
+    el.textContent = "🔎 Descubrimientos: " + n + "/" + (window.AVES ? window.AVES.length : 22);
+    el.classList.toggle("oculto", n === 0);
   }
 
   /* ---------- crear los anclas (una por tarjeta) ---------- */
@@ -228,24 +256,24 @@
     });
   }
 
-  /* ---------- componente: suavizado del ancla (anti-temblor) ----------
-     MindAR actualiza la pose del target. Copiamos la pose al ave de forma
-     directa. Con lerp = 1.0 es una copia exacta: sin interpolación, sin lag,
-     el ave se pega a la tarjeta al acercar/alejar con 1:1. */
   function registrarSuavizado() {
     if (typeof AFRAME === "undefined" || AFRAME.components["suavizar-ancla"]) return;
     AFRAME.registerComponent("suavizar-ancla", {
       schema: {
-        lerp: { type: "number", default: 1.0 }
+        lerp: { type: "number", default: 0.92 }
       },
       init: function () {
         var T = AFRAME.THREE;
         this.ancla = null;
         this.primera = true;
-        this.p = new T.Vector3();
-        this.q = new T.Quaternion();
-        this.p2 = new T.Vector3();
-        this.q2 = new T.Quaternion();
+        this.posS = new T.Vector3();
+        this.quaS = new T.Quaternion();
+        this.posR = new T.Vector3();
+        this.quaR = new T.Quaternion();
+        this.posAnt = new T.Vector3();
+        this.mInv = new T.Matrix4();
+        this.mSuave = new T.Matrix4();
+        this.mLocal = new T.Matrix4();
       },
       tick: function (time, dt) {
         if (!this.ancla) this.ancla = this.el.parentEl;
@@ -253,23 +281,31 @@
         if (!ancla || !ancla.object3D) return;
         if (!ancla.object3D.visible) { this.primera = true; return; }
 
-        ancla.object3D.updateMatrixWorld(true);
-        ancla.object3D.getWorldPosition(this.p2);
-        ancla.object3D.getWorldQuaternion(this.q2);
+        var crudo = ancla.object3D.matrix;
+        crudo.decompose(this.posR, this.quaR, new (AFRAME.THREE.Vector3)());
 
         if (this.primera) {
           this.primera = false;
-          this.el.object3D.position.copy(this.p2);
-          this.el.object3D.quaternion.copy(this.q2);
-          this.p.copy(this.p2);
-          this.q.copy(this.q2);
+          this.posS.copy(this.posR);
+          this.posAnt.copy(this.posR);
+          this.quaS.copy(this.quaR);
           return;
         }
 
-        this.p.lerp(this.p2, this.data.lerp);
-        this.q.slerp(this.q2, this.data.lerp);
-        this.el.object3D.position.copy(this.p);
-        this.el.object3D.quaternion.copy(this.q);
+        var dist = this.posAnt.distanceTo(this.posR);
+        if (dist > 0.12) {
+          this.posS.copy(this.posR);
+          this.quaS.copy(this.quaR);
+        } else {
+          this.posS.lerp(this.posR, this.data.lerp);
+          this.quaS.slerp(this.quaR, this.data.lerp);
+        }
+        this.posAnt.copy(this.posR);
+
+        this.mInv.copy(crudo).invert();
+        this.mSuave.compose(this.posS, this.quaS, ancla.object3D.scale);
+        this.mLocal.multiplyMatrices(this.mInv, this.mSuave);
+        this.mLocal.decompose(this.el.object3D.position, this.el.object3D.quaternion, this.el.object3D.scale);
       }
     });
   }

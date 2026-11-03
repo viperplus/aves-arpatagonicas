@@ -104,6 +104,9 @@
       "aparecer": ""
     });
     var cuerpo = ent({ "corte-vivo": "", "nitido": "" });
+    if (cuerpo.components && cuerpo.components["corte-vivo"]) {
+      try { cuerpo.components["corte-vivo"].aveId = ave.id; } catch (e) {}
+    }
     var plano = ent({
       geometry: "primitive: plane; width: " + L + "; height: " + L,
       material: "shader: flat; side: front; transparent: true; alphaTest: 0.03;" +
@@ -130,6 +133,53 @@
       };
       img.src = "assets/ave-25d/" + ave.id + ".png";
     })(plano, fy, L);
+
+    /* ===== EFECTO WOW: etiqueta flotante 3D ===== */
+    var texto = String(ave.nombre || "Ave");
+    var sub = String(ave.cientifico || "");
+    var cvEt = document.createElement("canvas");
+    cvEt.width = 1024; cvEt.height = 256;
+    var cx = cvEt.getContext("2d");
+    cx.fillStyle = "rgba(22,18,12,0.80)";
+    cx.fillRect(0, 0, 1024, 256);
+    cx.fillStyle = "#f6efdf";
+    cx.font = "700 92px 'Segoe UI', Arial, sans-serif";
+    cx.textAlign = "center"; cx.textBaseline = "middle";
+    cx.fillText(texto, 512, 92);
+    cx.fillStyle = "#c9a227";
+    cx.font = "700 56px 'Segoe UI', Arial, sans-serif";
+    cx.fillText(sub, 512, 178);
+    var texEt = new AFRAME.THREE.CanvasTexture(cvEt);
+
+    var etiqueta = document.createElement("a-entity");
+    etiqueta.setAttribute("geometry", "primitive: plane; width: 1.5; height: 0.3");
+    etiqueta.setAttribute("material", "shader: flat; transparent: true; side: front; depthWrite: false; alphaTest: 0.005");
+    etiqueta.setAttribute("position", "0 2.1 0.07");
+    etiqueta.setAttribute("aparecer-etiqueta", "");
+    var aplicarEt = function () {
+      var mesh = etiqueta.getObject3D("mesh");
+      if (!mesh || !mesh.material) return;
+      var T = (typeof AFRAME !== "undefined") ? AFRAME.THREE : null;
+      if (!T) return;
+      var t = new T.CanvasTexture(cvEt);
+      if ("colorSpace" in t && T.SRGBColorSpace) t.colorSpace = T.SRGBColorSpace;
+      mesh.material.map = t;
+      mesh.material.transparent = true;
+      mesh.material.opacity = 1;
+      mesh.material.alphaTest = 0.005;
+      mesh.material.needsUpdate = true;
+    };
+    etiqueta.addEventListener("object3dset", aplicarEt);
+    aplicarEt();
+    pivote.appendChild(etiqueta);
+
+    /* ===== EFECTO WOW: halo dorado al emerger ===== */
+    var halo = document.createElement("a-entity");
+    halo.setAttribute("geometry", "primitive: cylinder; radius: 0.34; height: 0.02");
+    halo.setAttribute("material", "shader: flat; transparent: true; opacity: 0; side: back; depthWrite: false; color: #c9a227;");
+    halo.setAttribute("position", "0 " + (yPies - 0.03) + " 0.05");
+    halo.setAttribute("halo", "");
+    raiz.appendChild(halo);
 
     return raiz;
   }
@@ -204,6 +254,28 @@
         }
       });
     }
+    if (!AFRAME.components["corte-vivo"]) {
+      AFRAME.registerComponent("corte-vivo", {
+        init: function () { this.t = Math.random() * 10; this.aveId = null; },
+        tick: function (time, dt) {
+          this.t += dt / 1000;
+          var t = this.t;
+          /* saltocito cada 6 s; balanceo y aleteo con frecuencias que
+             cierran en 6 s exactos (mismo ciclo que los videos del index) */
+          var c = t % 6;
+          var salto = c < 0.45 ? Math.sin(Math.PI * c / 0.45) * 0.018 : 0;
+          this.el.object3D.position.y = Math.sin(t * (2 * Math.PI / 3)) * 0.005 + salto;
+          this.el.object3D.rotation.z = Math.sin(t * (Math.PI / 3)) * 0.045;
+          /* pulso sutil sincronizado con el canto de la especie */
+          if (this.aveId && window.Cantos && window.Cantos.sonando && window.Cantos.sonando() === this.aveId) {
+            var s = 1 + Math.sin(t * 5) * 0.022;
+            this.el.object3D.scale.set(s, s, s);
+          } else {
+            this.el.object3D.scale.set(1, 1, 1);
+          }
+        }
+      });
+    }
     if (!AFRAME.components["aparecer"]) {
       AFRAME.registerComponent("aparecer", {
         init: function () {
@@ -239,6 +311,68 @@
             var s = 1 + c3 * Math.pow(prog - 1, 3) + c1 * Math.pow(prog - 1, 2);
             this.el.object3D.scale.set(s * 1.12, s * 1.12, s * 1.12);
             if (prog >= 1) this.animando = false;
+          }
+        }
+      });
+    }
+    if (!AFRAME.components["aparecer-etiqueta"]) {
+      AFRAME.registerComponent("aparecer-etiqueta", {
+        init: function () {
+          this.el.object3D.position.set(0, 2.1, 0.07);
+          this.t = 0;
+          this.dur = 0.3;
+          this.animando = false;
+          this.visibleAnt = false;
+          this.esAR = !!(this.el.parentEl && this.el.parentEl.object3D);
+        },
+        tick: function (time, dt) {
+          if (!this.esAR) return;
+          var p = this.el.parentEl;
+          var visible = !!(p && p.object3D && p.object3D.visible);
+          if (visible && !this.visibleAnt) { this.animando = true; this.t = 0; }
+          if (!visible) { this.el.object3D.position.set(0, 2.1, 0.07); this.animando = false; this.t = 0; }
+          this.visibleAnt = visible;
+          if (this.animando) {
+            this.t += (dt || 16.7) / 1000;
+            var prog = Math.min(1, this.t / this.dur);
+            var e = 1 - Math.pow(1 - prog, 2);
+            var mesh = this.el.getObject3D("mesh");
+            if (mesh && mesh.material) mesh.material.opacity = Math.max(0, Math.min(1, e * 0.95));
+            if (prog >= 1) this.animando = false;
+          }
+          this.el.object3D.position.y = 2.1 + Math.sin((time || 0) / 900) * 0.025;
+        }
+      });
+    }
+    if (!AFRAME.components["halo"]) {
+      AFRAME.registerComponent("halo", {
+        init: function () {
+          this.t = 0;
+          this.animando = false;
+          this.visibleAnt = false;
+          this.esAR = !!(this.el.parentEl && this.el.parentEl.object3D);
+          var mesh = this.el.getObject3D("mesh");
+          if (mesh && mesh.material) mesh.material.opacity = 0;
+        },
+        tick: function (time, dt) {
+          if (!this.esAR) return;
+          var p = this.el.parentEl;
+          var visible = !!(p && p.object3D && p.object3D.visible);
+          if (visible && !this.visibleAnt) { this.animando = true; this.t = 0; }
+          if (!visible) { this.animando = false; this.t = 0; }
+          this.visibleAnt = visible;
+          var mesh = this.el.getObject3D("mesh");
+          if (!mesh || !mesh.material) return;
+          if (this.animando) {
+            this.t += (dt || 16.7) / 1000;
+            var prog = Math.min(1, this.t / 0.35);
+            var s = 0.5 + prog * 0.9;
+            this.el.object3D.scale.set(s, s, s);
+            mesh.material.opacity = 0.55 * prog;
+            if (prog >= 1) this.animando = false;
+          } else {
+            this.el.object3D.scale.set(1, 1, 1);
+            mesh.material.opacity = 0;
           }
         }
       });

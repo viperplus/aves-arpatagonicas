@@ -94,9 +94,8 @@
     window.AVES.forEach(function (ave, i) {
       var ancla = document.createElement("a-entity");
       ancla.setAttribute("mindar-image-target", "targetIndex: " + i);
-      /* pegar directo al ancla - sin capa intermedia para minimizar latencia */
+      /* pegar directo al ancla sin componente intermedio */
       var raiz = window.Aves25D.crearAve25D(ave, false);
-      raiz.setAttribute("suavizar-ancla", "");
       ancla.appendChild(raiz);
       escena.appendChild(ancla);
 
